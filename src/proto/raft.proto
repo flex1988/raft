@@ -1,0 +1,60 @@
+syntax="proto2";
+package raft;
+
+option cc_generic_services = true;
+
+message LogEntry
+{
+    required int64 index = 1;
+    required uint64 term = 2;
+};
+
+enum RoleType
+{
+    INITIAL = 0;
+    FOLLOWER = 1;
+    CANDIDATE = 2;
+    LEADER = 3;
+};
+
+message ServerId
+{
+   required bytes ip = 1;
+   required int32 port = 2; 
+};
+
+message AppendEntriesRequest
+{
+    required uint64 term = 1;
+    required ServerId leader_id = 2;
+    required int64 prev_log_index = 3;
+    required uint64 prev_log_term = 4;
+    repeated LogEntry entries = 5;
+    required int64 leader_commit = 6;
+};
+
+message AppendEntriesResponse
+{
+    required uint64 term = 1;
+    required bool success = 2;
+};
+
+message RequestVoteRequest
+{
+    required uint64 term = 1;
+    required ServerId candidate_id = 2;
+    required int64 last_log_index = 3;
+    required uint64 last_log_term = 4;
+};
+
+message RequestVoteResponse
+{
+    required uint64 term = 1;
+    required bool vote_granted = 2;
+};
+
+service RaftService
+{
+    rpc AppendEntries(AppendEntriesRequest) returns (AppendEntriesResponse);
+    rpc RequestVote(RequestVoteRequest) returns (RequestVoteResponse);
+};
