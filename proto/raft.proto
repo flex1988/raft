@@ -1,0 +1,44 @@
+syntax="proto2";
+package raft;
+
+option cc_generic_services = true;
+
+message LogEntry
+{
+};
+
+message AppendEntriesRequest
+{
+    required int32 term = 1;
+    required int32 leaderId = 2;
+    required int64 prevLogIndex = 3;
+    required int32 prevLogTerm = 4;
+    repeated LogEntry entries = 5;
+    required int64 leaderCommit = 6;
+};
+
+message AppendEntriesResponse
+{
+    required int32 term = 1;
+    required bool success = 2;
+};
+
+message RequestVoteRequest
+{
+    required int32 term = 1;
+    required int32 candidateId = 2;
+    required int64 lastLogIndex = 3;
+    required int32 lastLogTerm = 4;
+};
+
+message RequestVoteResponse
+{
+    required int32 term = 1;
+    required bool voteGranted = 2;
+};
+
+service raft
+{
+    rpc AppendEntries(AppendEntriesRequest) returns (AppendEntriesResponse);
+    rpc RequestVote(RequestVoteRequest) returns (RequestVoteResponse);
+};
