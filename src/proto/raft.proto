@@ -3,10 +3,24 @@ package raft;
 
 option cc_generic_services = true;
 
+enum OpType
+{
+    OpWrite = 0;
+    OpDelete = 1;
+};
+
+message Command
+{
+    required OpType op = 1;
+    required bytes key = 2;
+    required bytes val = 3;
+};
+
 message LogEntry
 {
-    required int64 index = 1;
+    required uint64 index = 1;
     required uint64 term = 2;
+    required bytes  data = 3;
 };
 
 enum RoleType

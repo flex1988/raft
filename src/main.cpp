@@ -2,7 +2,8 @@
 #include <butil/logging.h>
 #include <brpc/server.h>
 #include "src/raft_service_impl.h"
-#include "src/util.h"
+#include "src/kv_service_impl.h"
+#include "src/include/util.h"
 
 DEFINE_int32(port, 8000, "server port");
 DEFINE_string(listen_addr, "127.0.0.1", "server listen address");
@@ -17,9 +18,8 @@ int main(int argc, char* argv[])
 {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
     brpc::Server server;
-    raft::ConsensusNode node;
-    raft::RaftServiceImpl raft(&node);
 
+    raft::ConsensusNodeImpl node;
     if (FLAGS_servers.empty())
     {
         LOG(ERROR) << "no given cluster servers, exit now";
@@ -31,24 +31,29 @@ int main(int argc, char* argv[])
     id.set_ip(FLAGS_listen_addr);
     id.set_port(FLAGS_port);
     node.SetOwnId(id);
-
-    for (int i = 0; i < servers.size(); i++)
+    for (uint32_t i = 0; i < servers.size(); i++)
     {
         int pos = servers[i].find(":");
         std::string ip = servers[i].substr(0, pos);
         int port = atoi(servers[i].substr(pos + 1).c_str());
-        raft::ServerId id;
-        id.set_ip(ip);
-        id.set_port(port);
-        node.AddServer(id);
+        raft::ServerId peer;
+        peer.set_ip(ip);
+        peer.set_port(port);
+        node.AddPeer(peer);
     }
-    node.Init();
+    node.Start(0);
 
-    node.BecomeFollower(0);
-
+    raft::RaftServiceImpl raft(&node);
     if (server.AddService(&raft, brpc::SERVER_DOESNT_OWN_SERVICE) != 0)
     {
         LOG(ERROR) << "add raft service failed";
+        return -1;
+    }
+
+    raft::KVServiceImpl kv(&node);
+    if (server.AddService(&kv, brpc::SERVER_DOESNT_OWN_SERVICE) != 0)
+    {
+        LOG(ERROR) << "add kv service failed";
         return -1;
     }
 

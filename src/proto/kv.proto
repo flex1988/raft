@@ -1,0 +1,43 @@
+syntax="proto2";
+package raft;
+
+option cc_generic_services = true;
+
+message GetRequest
+{
+    required bytes key = 1;
+};
+
+message GetResponse
+{
+    required int32 retcode = 1;
+    required bytes val = 2;
+};
+
+message SetRequest
+{
+    required bytes key = 1;
+    required bytes val = 2;
+};
+
+message SetResponse
+{
+    required int32 retcode = 1;
+};
+
+message DelRequest
+{
+    required bytes key = 1;
+};
+
+message DelResponse
+{
+    required int32 retcode = 1;
+};
+
+service KVService
+{
+    rpc Get (GetRequest) returns (GetResponse);
+    rpc Set (SetRequest) returns (SetResponse);
+    rpc Del (DelRequest) returns (DelResponse);
+};
