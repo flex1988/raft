@@ -3,18 +3,7 @@ package raft;
 
 option cc_generic_services = true;
 
-enum OpType
-{
-    OpWrite = 0;
-    OpDelete = 1;
-};
-
-message Command
-{
-    required OpType op = 1;
-    required bytes key = 2;
-    required bytes val = 3;
-};
+import "src/proto/common.proto";
 
 message LogEntry
 {
@@ -29,12 +18,6 @@ enum RoleType
     FOLLOWER = 1;
     CANDIDATE = 2;
     LEADER = 3;
-};
-
-message ServerId
-{
-   required bytes ip = 1;
-   required int32 port = 2; 
 };
 
 message AppendEntriesRequest

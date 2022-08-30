@@ -19,9 +19,9 @@ public:
              GetResponse* response,
              google::protobuf::Closure* done);
 
-    void Set(google::protobuf::RpcController* ctrl,
-             const SetRequest* request,
-             SetResponse* response,
+    void Put(google::protobuf::RpcController* ctrl,
+             const PutRequest* request,
+             PutResponse* response,
              google::protobuf::Closure* done);
 
     void Del(google::protobuf::RpcController* ctrl,

@@ -1,3 +1,6 @@
+#ifndef __RAFT_TYPES_H__
+#define __RAFT_TYPES_H__
+
 #include <string>
 
 namespace raft
@@ -23,4 +26,27 @@ struct PeerId
     }
 };
 
+struct RawServerId
+{
+    int         port;
+    std::string ip;
+
+    RawServerId()
+    : port(0)
+    {
+    }
+
+    RawServerId(const std::string& ip, int port)
+    : port(port), ip(ip)
+    {
+    }
+
+    bool operator == (const RawServerId& other)
+    {
+        return port == other.port && ip == other.ip;
+    }
+};
+
 }
+
+#endif // __RAFT_TYPES_H__

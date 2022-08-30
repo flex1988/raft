@@ -3,6 +3,8 @@ package raft;
 
 option cc_generic_services = true;
 
+import "src/proto/common.proto";
+
 message GetRequest
 {
     required bytes key = 1;
@@ -10,19 +12,21 @@ message GetRequest
 
 message GetResponse
 {
-    required int32 retcode = 1;
-    required bytes val = 2;
+    required int32    retcode = 1;
+    required bytes    val = 2;
+    optional ServerId leader = 3;
 };
 
-message SetRequest
+message PutRequest
 {
     required bytes key = 1;
     required bytes val = 2;
 };
 
-message SetResponse
+message PutResponse
 {
     required int32 retcode = 1;
+    optional ServerId leader = 2;
 };
 
 message DelRequest
@@ -33,11 +37,12 @@ message DelRequest
 message DelResponse
 {
     required int32 retcode = 1;
+    optional ServerId leader = 2;
 };
 
 service KVService
 {
     rpc Get (GetRequest) returns (GetResponse);
-    rpc Set (SetRequest) returns (SetResponse);
+    rpc Put (PutRequest) returns (PutResponse);
     rpc Del (DelRequest) returns (DelResponse);
 };

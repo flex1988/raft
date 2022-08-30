@@ -8,10 +8,17 @@ namespace raft
 class Status
 {
 public:
-    Status() {}
+    Status()
+    : code(0), msg("")
+    {
+    }
+
     Status(int ret)
     : code(ret)
-    {}
+    {
+    }
+
+    bool IsOK() { return code == 0; }
 
     static Status OK() { return {}; }
 

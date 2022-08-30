@@ -22,9 +22,9 @@ void KVServiceImpl::Get(google::protobuf::RpcController* ctrl,
     response->set_retcode(0);
 }
 
-void KVServiceImpl::Set(google::protobuf::RpcController* ctrl,
-            const SetRequest* request,
-            SetResponse* response,
+void KVServiceImpl::Put(google::protobuf::RpcController* ctrl,
+            const PutRequest* request,
+            PutResponse* response,
             google::protobuf::Closure* done)
 {
     brpc::ClosureGuard _guard(done);

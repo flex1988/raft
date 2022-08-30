@@ -9,7 +9,6 @@ jobs:
     name: build_all
     runs-on: ubuntu-latest
     steps:
-
       - uses: actions/checkout@v2
       - name: build
         run: bazelisk build //...

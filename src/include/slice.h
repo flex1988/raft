@@ -10,14 +10,13 @@ namespace raft
 class Slice
 {
 public:
-    Slice() : mData(""), mSize(0) {}
-    Slice(const char* d, size_t n) : mData(d), mSize(n) {}
-    Slice(const std::string& s) : mData(s.data()), mSize(s.size()) {}
-    Slice(const char* s) : mData(s) { mSize = (s == NULL) ? 0 : strlen(s); }
+    Slice() : data(""), size(0) {}
+    Slice(const char* d, size_t n) : data(d), size(n) {}
+    Slice(const std::string& s) : data(s.data()), size(s.size()) {}
+    Slice(const char* s) : data(s) { size = (s == NULL) ? 0 : strlen(s); }
 
-private:
-    const char* mData;
-    size_t      mSize;
+    const char* data;
+    size_t      size;
 };
 
 }
