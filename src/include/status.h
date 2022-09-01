@@ -18,7 +18,9 @@ public:
     {
     }
 
-    bool IsOK() { return code == 0; }
+    bool IsOK() const { return code == 0; }
+
+    int Code() const { return code; }
 
     static Status OK() { return {}; }
 

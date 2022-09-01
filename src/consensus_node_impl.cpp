@@ -124,6 +124,12 @@ void ConsensusNodeImpl::onAppendEntriesDone(brpc::Controller* ctrl, raft::Append
     mMatchIndex[context->index] += context->entryCount;
 
     applyLogToStateMachine();
+
+    mInflightAppendEntries--;
+    if (mInflightAppendEntries == 0)
+    {
+        mIsBackgroundAEOngoing = false;
+    }
 }
 
 void ConsensusNodeImpl::applyLogToStateMachine()
@@ -133,10 +139,22 @@ void ConsensusNodeImpl::applyLogToStateMachine()
     {
         latest = std::min(latest, mMatchIndex[j]);
     }
+
     for (uint64_t i = mCommitIndex + 1; i <= latest; i++)
     {
         // apply log to state machine
+        LOG(INFO) << "Apply log to state machine " << i;
+
+        raft::RaftStatusClosureA1<KVServiceImpl, google::protobuf::Closure*>* done = mSubmitCallbacks[i];
+        if (done == NULL)
+        {
+            return;
+        }
+        mSubmitCallbacks.erase(i);
+        done->SetStatus(Status::OK());
+        run_closure_in_bthread(done, BTHREAD_ATTR_NORMAL);
     }
+    
     mCommitIndex = latest;
 }
 
@@ -190,6 +208,8 @@ void ConsensusNodeImpl::init()
             return;
         }
     }
+    mNextIndex.resize(mPeers.size(), 0);
+    mMatchIndex.resize(mPeers.size(), 0);
 }
 
 void ConsensusNodeImpl::AddPeer(raft::ServerId id)
@@ -253,12 +273,12 @@ void ConsensusNodeImpl::LeaderSendHeartBeats()
 // 2. write to local storage
 // 3. replicate to majority nodes
 // 4. done->run
-void ConsensusNodeImpl::Submit(const Command& cmd, RaftStatusClosure<ConsensusNodeImpl>* done)
+void ConsensusNodeImpl::Submit(const Command& cmd, RaftStatusClosureA1<KVServiceImpl, google::protobuf::Closure*>* done)
 {
     if (mRole != raft::LEADER)
     {
         done->SetStatus(Status::ERROR());
-        done->Run();
+        run_closure_in_bthread(done, BTHREAD_ATTR_NORMAL);
         return;
     }
     raft::LogEntry entry;
@@ -272,6 +292,7 @@ void ConsensusNodeImpl::Submit(const Command& cmd, RaftStatusClosure<ConsensusNo
     mLatestLogIndex++;
     assert(mSubmitCallbacks.find(mLatestLogIndex) == mSubmitCallbacks.end());
     mSubmitCallbacks[mLatestLogIndex] = done;
+    LOG(INFO) << "Leader submit command type: " << cmd.op() << " key: " << cmd.key() << " val: " << cmd.val();
 
     if (!mIsBackgroundAEOngoing)
     {
@@ -287,7 +308,6 @@ void ConsensusNodeImpl::onSubmitDone(const Status& status)
 
 void ConsensusNodeImpl::leaderReplicateLog()
 {
-    mIsBackgroundAEOngoing = false;
     for (uint32_t i = 0; i < mPeers.size(); i++)
     {
         raft::ServerId id = mPeers[i];
@@ -323,8 +343,11 @@ void ConsensusNodeImpl::leaderReplicateLog()
             raft::AppendEntriesResponse* response = new raft::AppendEntriesResponse;
             AppendEntriesContext* context = new AppendEntriesContext;
             context->index = i;
+            context->from = mNextIndex[i];
             context->entryCount = request.entries_size();
+            LOG(INFO) << "Leader appendentries from " << mNextIndex[i] << " to " << mLatestLogIndex;
             stub.AppendEntries(ctrl, &request, response, brpc::NewCallback(this, &ConsensusNodeImpl::onAppendEntriesDone, ctrl, response, context));
+            mInflightAppendEntries++;
         }
     }
 }
@@ -343,7 +366,7 @@ void ConsensusNodeImpl::HandleAppendEntries(google::protobuf::RpcController* ctr
         return;
     }
     // TODO compare log
-    LOG(INFO) << "appendentries term " << request->term();
+    LOG(INFO) << "appendentries term " << request->term() << " entry count " << request->entries_size();
     mCurrentTerm = request->term();
     mElectionTimer.AddTimer(butil::milliseconds_from_now(RandomRange(FLAGS_election_timeout_ms_min, FLAGS_election_timeout_ms_max) * 10),
             brpc::NewCallback(this, &ConsensusNodeImpl::onElectionTimeout, mCurrentTerm));

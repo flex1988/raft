@@ -28,6 +28,10 @@ public:
              const DelRequest* request,
              DelResponse* response,
              google::protobuf::Closure* done);
+
+private:
+    void onPutDone(google::protobuf::Closure* done, const Status& status);
+
 private:
     ConsensusNodeImpl* mConsensusNode;
 };

@@ -52,6 +52,10 @@ void KVClientImpl::Get(const Slice& k, std::string* v, RaftStatusClosure<KVClien
                 }
             }
         }
+        else
+        {
+            mLeaderIndex = -1;
+        }
     }
     else
     {
@@ -86,6 +90,10 @@ void KVClientImpl::Put(const Slice& k, const Slice& v, RaftStatusClosure<KVClien
                     break;
                 }
             }
+        }
+        else
+        {
+            mLeaderIndex = -1;
         }
     }
 }

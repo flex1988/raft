@@ -14,6 +14,8 @@
 namespace raft
 {
 
+class KVServiceImpl;
+
 struct RaftTimer
 {
     RaftTimer()
@@ -68,7 +70,8 @@ public:
       mRole(RoleType::INITIAL),
       mRequestVoteSucc(0),
       mRequestVoteTerm(0),
-      mIsBackgroundAEOngoing(false)
+      mIsBackgroundAEOngoing(false),
+      mInflightAppendEntries(0)
     {
     }
 
@@ -95,6 +98,10 @@ public:
 
     void LeaderSendHeartBeats();
 
+    bool IsLeader() { return mRole == raft::LEADER; }
+
+    raft::ServerId Id() { return mOwnId; }
+
 public:
     void HandleRequestVote(google::protobuf::RpcController* ctrl,
                                 const RequestVoteRequest* request,
@@ -106,7 +113,7 @@ public:
                                 AppendEntriesResponse* response,
                                 google::protobuf::Closure* done);
 
-    void Submit(const raft::Command& cmd, RaftStatusClosure<ConsensusNodeImpl>* done);
+    void Submit(const raft::Command& cmd, raft::RaftStatusClosureA1<KVServiceImpl, google::protobuf::Closure*>* done);
 
     void Start(uint64_t term)
     {
@@ -117,10 +124,12 @@ public:
 private:
     struct AppendEntriesContext
     {
+        int from;
         int index;
         int entryCount;
         AppendEntriesContext()
-        : index(0),
+        : from(0),
+          index(0),
           entryCount(0)
         {
         }
@@ -177,7 +186,8 @@ private:
     RaftTimer                           mHeartBeatTimer;
     RaftTimer                           mElectionTimer;
     bool                                mIsBackgroundAEOngoing;
-    std::map<uint64_t, RaftStatusClosure<ConsensusNodeImpl>* > mSubmitCallbacks;
+    int                                 mInflightAppendEntries;
+    std::map<uint64_t, RaftStatusClosureA1<KVServiceImpl, google::protobuf::Closure*>* > mSubmitCallbacks;
 };
 
 }

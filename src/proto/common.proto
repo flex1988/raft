@@ -3,15 +3,15 @@ package raft;
 
 enum OpType
 {
-    OpWrite = 0;
-    OpDelete = 1;
+    PUT = 0;
+    DELETE = 1;
 };
 
 message Command
 {
     required OpType op = 1;
     required bytes key = 2;
-    required bytes val = 3;
+    optional bytes val = 3;
 };
 
 message ServerId
