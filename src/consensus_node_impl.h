@@ -7,7 +7,6 @@
 #include <vector>
 #include <map>
 
-#include "src/include/consensus_node.h"
 #include "src/proto/raft.pb.h"
 #include "src/raft_closure.h"
 

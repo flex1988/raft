@@ -18,21 +18,23 @@ cc_library(
             "src/consensus_node_impl.cpp",
             "src/raft_closure.cpp",
             "src/util.cpp",
+            "src/raft_impl.cpp",
     ],
     hdrs = [ 
-            "src/include/consensus_node.h",
             "src/include/raft_types.h",
             "src/include/status.h",
             "src/include/util.h",
+            "src/include/raft.h",
             "src/raft_service_impl.h",
             "src/kv_service_impl.h",
             "src/consensus_node_impl.h",
-            "src/raft_closure.h"
+            "src/raft_closure.h",
+            "src/raft_impl.h",
     ],
     deps = [ 
 		":libraft_proto",
-		"@com_github_brpc_brpc//:brpc",
 		"@com_github_google_glog//:glog",
+		"@com_github_brpc_brpc//:brpc",
 		"@com_google_protobuf//:protobuf",
 		"@com_github_gflags_gflags//:gflags",
 		"@zlib//:zlib",
@@ -46,6 +48,15 @@ cc_binary(
         ":libraft_proto",
         ":libraft_service",
     ],
+)
+
+cc_binary(
+    name = "raft_unittest",
+    srcs = [ "src/unittest/raft_unittest.cpp", "src/unittest/unittest_main.cpp" ],
+    deps = [
+        ":libraft_service",
+        "@com_google_googletest//:gtest",
+    ]
 )
 
 cc_library(

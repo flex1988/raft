@@ -12,3 +12,6 @@ jobs:
       - uses: actions/checkout@v2
       - name: build
         run: bazelisk build //...
+
+      - name: run unittest
+        run: ./bazel-bin/raft_unittest
