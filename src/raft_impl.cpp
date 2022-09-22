@@ -1,5 +1,8 @@
-#include "src/raft_impl.h"
 #include <butil/logging.h>
+#include <memory>
+
+#include "src/raft_impl.h"
+#include "src/progress_tracker.h"
 
 namespace raft
 {
@@ -12,6 +15,11 @@ RaftImpl::RaftImpl(const Config& conf)
   mElectionTimeout(conf.electionTick),
   mHeartbeatTimeout(conf.heartbeatTick)
 {
+    mTracker.reset(new ProgressTracker(static_cast<int>(conf.clusterIds.size())));
+    for (uint32_t i = 0; i < conf.clusterIds.size(); i++)
+    {
+        mClusterIds.push_back(conf.clusterIds[i]);
+    }
 }
 
 void RaftImpl::Bootstrap()
@@ -27,7 +35,23 @@ void RaftImpl::Tick()
 
 void RaftImpl::Campaign()
 {
+    poll(mId, MsgVote, true);
     becomeCandidate();
+
+    for (uint32_t i = 0; i < mClusterIds.size(); i++)
+    {
+        if (mClusterIds[i] == mId)
+        {
+            continue;
+        }
+        RaftMessage msg;
+        msg.term = mCurrentTerm;
+        msg.to = mClusterIds[i];
+        msg.type = MsgVote;
+        //msg.index = 0;
+        msg.logTerm = 0;
+        submitMessage(msg);
+    }
 }
 
 void RaftImpl::Propose()
@@ -45,8 +69,9 @@ void RaftImpl::Ready()
 
 }
 
-void RaftImpl::Step(RaftMessage& msg)
+Status RaftImpl::Step(RaftMessage& msg)
 {
+    Status s = RAFT_OK;
     if (msg.term == 0)
     {
         // local message
@@ -69,9 +94,10 @@ void RaftImpl::Step(RaftMessage& msg)
 
         default:
         {
-            mStepfunc(msg);
+            s = mStepfunc(msg);
         }
     }
+    return s;
 }
 
 void RaftImpl::Advance()
@@ -148,14 +174,107 @@ bool RaftImpl::pastElectionTimeout()
 	return mElectionElapsed >= mRandomizedElectionTimeout;
 }
 
-void RaftImpl::stepFollower(RaftMessage& msg)
+VoteResult RaftImpl::poll(uint64_t id, RaftMessageType type, bool win)
 {
-
+    mTracker->RecordVote(id, win);
+    return mTracker->TallyVotes();
 }
 
-void RaftImpl::stepCandidate(RaftMessage& msg)
+Status RaftImpl::stepFollower(RaftMessage& msg)
 {
+    switch (msg.type)
+    {
+        case MsgProp:
+        {
+            break;
+        }
 
+        case MsgApp:
+        {
+            break;
+        }
+
+    }
+    return RAFT_OK;
+}
+
+Status RaftImpl::stepCandidate(RaftMessage& msg)
+{
+    switch (msg.type)
+    {
+        case MsgProp:
+        {
+            LOG(INFO) << mId << " no leader at term " << mCurrentTerm << " dropping proposal";
+            return ERROR_PROPOSAL_DROPPED;
+        }
+        case MsgApp:
+        {
+            becomeFollower(msg.term, msg.from);
+            // handleAppendEntries(msg);
+        }
+        case MsgHeartbeat:
+        {
+            becomeFollower(msg.term, msg.from);
+            // handleHeartbeat(msg);
+        }
+        case MsgSnap:
+        {
+            becomeFollower(msg.term, msg.from);
+            // handleSnapshot(msg);
+        }
+        case MsgVoteResp:
+        {
+            VoteResult res = poll(msg.from, msg.type, !msg.reject);
+            LOG(INFO) << mId << " has received " << res.granted << " " << msg.type << " and " << res.rejected << " rejections";
+            if (res.state == VoteWon)
+            {
+                // becomeLeader();
+                // bcastAppend();
+            }
+            else if (res.state == VoteLost)
+            {
+                becomeFollower(mCurrentTerm, NONE_LEADER_ID);
+            }
+        }
+        case MsgTimeoutNow:
+            LOG(INFO) << mId << " \[term " << msg.term << " state " << mState << " \] ignored MsgTimeoutNow from " << msg.from;
+    }
+    return RAFT_OK;
+}
+
+void RaftImpl::submitMessage(RaftMessage& msg)
+{
+    if (msg.from == NONE_LEADER_ID)
+    {
+        msg.from = mId;
+    }
+    if (msg.type == MsgVote || msg.type == MsgVoteResp)
+    {
+        // All {pre-,}campaign messages need to have the term set when
+        // sending.
+        // - MsgVote: m.Term is the term the node is campaigning for,
+        //   non-zero as we increment the term when campaigning.
+        // - MsgVoteResp: m.Term is the new r.Term if the MsgVote was
+        //   granted, non-zero for the same reason MsgVote is
+        // - MsgPreVote: m.Term is the term the node will campaign,
+        //   non-zero as we use m.Term to indicate the next term we'll be
+        //   campaigning for
+        // - MsgPreVoteResp: m.Term is the term received in the original
+        //   MsgPreVote if the pre-vote was granted, non-zero for the
+        //   same reasons MsgPreVote is
+        CHECK_NE(msg.term, 0) << "term should be set when sending " << msg.type;
+    }
+    else
+    {
+        CHECK_EQ(msg.term, 0) << "term should not be set when sending " << msg.type << " term " << msg.term;
+
+        if (msg.type != MsgProp)
+        {
+            msg.term = mCurrentTerm;
+        }
+    }
+    LOG(INFO) << mId << " submit msg to " << msg.to;
+    mSendMsgs.push_back(msg);
 }
 
 }   

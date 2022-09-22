@@ -1,9 +1,12 @@
 #ifndef __RAFT_IMPL__
 #define __RAFT_IMPL__
 
-#include "src/include/raft.h"
-
+#include <memory>
 #include <vector>
+
+#include "src/include/raft.h"
+#include "src/include/status.h"
+#include "src/progress_tracker.h"
 
 namespace raft
 {
@@ -18,7 +21,7 @@ public:
     void Campaign();
     void Propose();
     void ProposeConfChange();
-    void Step(RaftMessage&);
+    Status Step(RaftMessage&);
     void Ready();
     void Advance();
 
@@ -28,17 +31,21 @@ private:
     void becomeFollower(uint64_t term, uint64_t leader);
     void becomeLeader();
     void becomeCandidate();
-    void stepFollower(RaftMessage&);
-    void stepCandidate(RaftMessage&);
+    Status stepFollower(RaftMessage&);
+    Status stepCandidate(RaftMessage&);
     void tickElection();
     void reset(uint64_t);
     void hup();
+    VoteResult poll(uint64_t id, RaftMessageType type, bool win);
 
     void resetRandomizedElectionTimeout();
     bool pastElectionTimeout();
 
+    void submitMessage(RaftMessage&);
+
 private:
     uint64_t                                mId;
+    std::vector<uint64_t>                   mPeerIds;
     uint64_t                                mCurrentTerm;
     uint64_t                                mVote;
     uint64_t                                mLeaderId;
@@ -61,8 +68,10 @@ private:
     uint64_t                                mMaxUncommittedSize;
     StateType                               mState;
     std::function<void()>                   mTickfunc;
-    std::function<void(RaftMessage&)>       mStepfunc;
-    std::vector<RaftMessage*>               mMsgs;
+    std::function<Status(RaftMessage&)>     mStepfunc;
+    std::vector<RaftMessage>                mSendMsgs;
+    std::unique_ptr<ProgressTracker>        mTracker;
+    std::vector<uint64_t>                   mClusterIds;
 };
 
 }

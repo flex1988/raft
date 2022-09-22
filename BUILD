@@ -19,6 +19,7 @@ cc_library(
             "src/raft_closure.cpp",
             "src/util.cpp",
             "src/raft_impl.cpp",
+            "src/progress_tracker.cpp",
     ],
     hdrs = [ 
             "src/include/raft_types.h",
@@ -30,6 +31,7 @@ cc_library(
             "src/consensus_node_impl.h",
             "src/raft_closure.h",
             "src/raft_impl.h",
+            "src/progress_tracker.h",
     ],
     deps = [ 
 		":libraft_proto",

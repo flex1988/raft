@@ -13,8 +13,8 @@ public:
     {
     }
 
-    Status(int ret)
-    : code(ret)
+    Status(int ret, char* m)
+    : code(ret), msg(m)
     {
     }
 
@@ -24,10 +24,17 @@ public:
 
     static Status OK() { return {}; }
 
-    static Status ERROR() { return {-1}; }
+    static Status ERROR() { return {-1, "error"}; }
 
 private:
     int code;
     std::string msg;
 };
+
+static Status RAFT_OK = Status(0, "");
+
+static Status RAFT_ERROR = Status(-1, "default error");
+
+static Status ERROR_PROPOSAL_DROPPED = Status(-1000, "error proposal dropped");
+
 }

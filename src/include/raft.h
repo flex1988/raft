@@ -2,17 +2,29 @@
 #define __RAFT_H__
 
 #include <functional>
+#include <vector>
 
 #include "stdint.h"
+#include "src/include/status.h"
 
 namespace raft
 {
+
+const uint64_t NONE_LEADER_ID = 0;
 
 enum RaftMessageType
 {
     MsgNope = 0,
     MsgBeat,
     MsgHup,
+    MsgProp,
+    MsgApp,
+    MsgVote,
+    MsgVoteResp,
+    MsgHeartbeat,
+    MsgSnap,
+    MsgTimeout,
+    MsgTimeoutNow,
 };
 
 struct RaftMessage
@@ -43,6 +55,28 @@ struct RaftMessage
     {}
 };
 
+enum VoteState
+{
+    VoteNotDone = 0,
+    VoteWon = 1,
+    VoteLost = 2,
+};
+
+struct VoteResult
+{
+    uint64_t    id;
+    int         granted;
+    int         rejected;
+    VoteState   state;
+    VoteResult()
+    :  id(NONE_LEADER_ID),
+       granted(0),
+       rejected(0),
+       state(VoteNotDone)
+    {
+    }
+};
+
 enum StateType
 {
     StateFollower = 0,
@@ -50,13 +84,11 @@ enum StateType
     StateLeader = 2,
 };
 
-const uint64_t NONE_LEADER_ID = UINT64_MAX;
-
 // Config contains the parameters to start a raft.
 struct Config
 {
     // ID is the identity of the local raft. ID cannot be 0.
-    uint64_t    id;
+    uint64_t                id;
 
     // ElectionTick is the number of Node.Tick invocations that must pass between
 	// elections. That is, if a follower does not receive any message from the
@@ -64,12 +96,12 @@ struct Config
 	// candidate and start an election. ElectionTick must be greater than
 	// HeartbeatTick. We suggest ElectionTick = 10 * HeartbeatTick to avoid
 	// unnecessary leader switching.
-    int         electionTick;
+    int                     electionTick;
 
     // HeartbeatTick is the number of Node.Tick invocations that must pass between
 	// heartbeats. That is, a leader sends heartbeat messages to maintain its
 	// leadership every HeartbeatTick ticks.
-    int         heartbeatTick;
+    int                     heartbeatTick;
 
 	// Storage is the storage for raft. raft generates entries and states to be
 	// stored in storage. raft reads the persisted entries and states out of
@@ -82,7 +114,9 @@ struct Config
 	// raft. raft will not return entries to the application smaller or equal to
 	// Applied. If Applied is unset when restarting, raft might return previous
 	// applied entries. This is a very application dependent configuration.
-    uint64_t    applied;
+    uint64_t                applied;
+
+    std::vector<uint64_t>   clusterIds;
     Config()
     : id(0),
       electionTick(0),
@@ -105,7 +139,7 @@ public:
 
     virtual void ProposeConfChange() = 0;
 
-    virtual void Step(RaftMessage&) = 0;
+    virtual Status Step(RaftMessage&) = 0;
 
     virtual void Ready() = 0;
 
