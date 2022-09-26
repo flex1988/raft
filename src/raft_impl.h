@@ -33,14 +33,14 @@ private:
     void becomeCandidate();
     Status stepFollower(RaftMessage&);
     Status stepCandidate(RaftMessage&);
+    Status stepLeader(RaftMessage&);
     void tickElection();
+    void tickHeartbeat();
     void reset(uint64_t);
     void hup();
     VoteResult poll(uint64_t id, RaftMessageType type, bool win);
-
     void resetRandomizedElectionTimeout();
     bool pastElectionTimeout();
-
     void submitMessage(RaftMessage&);
 
 private:
@@ -63,6 +63,7 @@ private:
 	// number of ticks since it reached last electionTimeout or received a
 	// valid message from current leader when it is a follower.
     int                                     mElectionElapsed;
+    int                                     mHeartbeatElapsed;
     // raft log
     uint64_t                                mMaxMsgSize;
     uint64_t                                mMaxUncommittedSize;

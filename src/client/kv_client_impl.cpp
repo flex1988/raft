@@ -13,11 +13,11 @@ Status KVClientImpl::Open(const KVClientOptions& options)
         if (mChannels[i].Init(options.servers[i], &channeloption) != 0)
         {
             LOG(ERROR) << "server init channel success server: " << butil::endpoint2str(options.servers[i]);
-            return Status::ERROR();
+            return RAFT_ERROR;
         }
         mServerIds.push_back(options.serverIds[i]);
     }
-    return Status::OK();
+    return RAFT_OK;
 }
 
 void KVClientImpl::Close()

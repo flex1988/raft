@@ -54,7 +54,11 @@ cc_binary(
 
 cc_binary(
     name = "raft_unittest",
-    srcs = [ "src/unittest/raft_unittest.cpp", "src/unittest/unittest_main.cpp" ],
+    srcs = [
+        "src/unittest/raft_unittest.cpp",
+        "src/unittest/raft_paper_unittest.cpp",
+        "src/unittest/unittest_main.cpp"
+    ],
     deps = [
         ":libraft_service",
         "@com_google_googletest//:gtest",

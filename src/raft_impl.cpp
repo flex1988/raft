@@ -13,7 +13,9 @@ RaftImpl::RaftImpl(const Config& conf)
   mLeaderId(0),
   mIsLearner(false),
   mElectionTimeout(conf.electionTick),
-  mHeartbeatTimeout(conf.heartbeatTick)
+  mHeartbeatTimeout(conf.heartbeatTick),
+  mElectionElapsed(0),
+  mHeartbeatElapsed(0)
 {
     mTracker.reset(new ProgressTracker(static_cast<int>(conf.clusterIds.size())));
     for (uint32_t i = 0; i < conf.clusterIds.size(); i++)
@@ -76,13 +78,23 @@ Status RaftImpl::Step(RaftMessage& msg)
     {
         // local message
     }
-    if (msg.term > mCurrentTerm)
+    else if (msg.term > mCurrentTerm)
     {
-        ;
+        LOG(INFO) << mId << " [term: " << mCurrentTerm << "]" << "received a " << msg.type <<
+                " message with higher term from " << msg.from << " [term: " << msg.term << "]";
+        if (msg.type == MsgApp || msg.type == MsgHeartbeat || msg.type == MsgSnap)
+        {
+            becomeFollower(msg.term, msg.from);
+        }
+        else
+        {
+            becomeFollower(msg.term, NONE_LEADER_ID);
+        }
     }
-    if (msg.term < mCurrentTerm)
+    else if (msg.term < mCurrentTerm)
     {
-        ;
+        LOG(INFO) << mId << " [term: " << mCurrentTerm << "] ignored a " << msg.type <<
+                "message with lower term from " << msg.from << "[term: " << msg.term << "]";
     }
 
     switch (msg.type)
@@ -116,6 +128,17 @@ void RaftImpl::hup()
     Campaign();
 }
 
+void RaftImpl::becomeLeader()
+{
+    CHECK_NE(mState, StateFollower) << "invalid transition [follower -> leader]";
+    reset(mCurrentTerm);
+    mLeaderId = mId;
+    mTickfunc = std::bind(&RaftImpl::tickHeartbeat, this);
+    mStepfunc = std::bind(&RaftImpl::stepLeader, this, std::placeholders::_1);
+    mState = StateLeader;
+    LOG(INFO) << mId << " become leader at term " << mCurrentTerm;
+}
+
 void RaftImpl::becomeFollower(uint64_t term, uint64_t leader)
 {
     reset(term);
@@ -129,8 +152,8 @@ void RaftImpl::becomeFollower(uint64_t term, uint64_t leader)
 void RaftImpl::becomeCandidate()
 {
     reset(mCurrentTerm + 1);
-    mStepfunc = std::bind(&RaftImpl::stepCandidate, this, std::placeholders::_1);
     mTickfunc = std::bind(&RaftImpl::tickElection, this);
+    mStepfunc = std::bind(&RaftImpl::stepCandidate, this, std::placeholders::_1);
     mVote = mId;
     mState = StateCandidate;
     LOG(INFO) << mId << " become candidate at term " << mCurrentTerm;
@@ -159,6 +182,13 @@ void RaftImpl::tickElection()
         msg.from = mId;
         Step(msg);
     }
+}
+
+void RaftImpl::tickHeartbeat()
+{
+    mHeartbeatElapsed++;
+    mElectionElapsed++;
+
 }
 
 void RaftImpl::resetRandomizedElectionTimeout()
@@ -228,7 +258,7 @@ Status RaftImpl::stepCandidate(RaftMessage& msg)
             LOG(INFO) << mId << " has received " << res.granted << " " << msg.type << " and " << res.rejected << " rejections";
             if (res.state == VoteWon)
             {
-                // becomeLeader();
+                becomeLeader();
                 // bcastAppend();
             }
             else if (res.state == VoteLost)
@@ -239,6 +269,11 @@ Status RaftImpl::stepCandidate(RaftMessage& msg)
         case MsgTimeoutNow:
             LOG(INFO) << mId << " \[term " << msg.term << " state " << mState << " \] ignored MsgTimeoutNow from " << msg.from;
     }
+    return RAFT_OK;
+}
+
+Status RaftImpl::stepLeader(RaftMessage& msg)
+{
     return RAFT_OK;
 }
 

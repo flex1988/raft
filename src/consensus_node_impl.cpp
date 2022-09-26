@@ -151,7 +151,7 @@ void ConsensusNodeImpl::applyLogToStateMachine()
             return;
         }
         mSubmitCallbacks.erase(i);
-        done->SetStatus(Status::OK());
+        done->SetStatus(RAFT_OK);
         run_closure_in_bthread(done, BTHREAD_ATTR_NORMAL);
     }
     
@@ -277,7 +277,7 @@ void ConsensusNodeImpl::Submit(const Command& cmd, RaftStatusClosureA1<KVService
 {
     if (mRole != raft::LEADER)
     {
-        done->SetStatus(Status::ERROR());
+        done->SetStatus(RAFT_ERROR);
         run_closure_in_bthread(done, BTHREAD_ATTR_NORMAL);
         return;
     }

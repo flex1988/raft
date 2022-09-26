@@ -22,10 +22,6 @@ public:
 
     int Code() const { return code; }
 
-    static Status OK() { return {}; }
-
-    static Status ERROR() { return {-1, "error"}; }
-
 private:
     int code;
     std::string msg;

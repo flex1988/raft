@@ -36,3 +36,16 @@ TEST_F(RaftFixture, Tick)
 
     EXPECT_EQ(raft->GetState(), raft::StateCandidate);
 }
+
+TEST_F(RaftFixture, LeaderElection)
+{
+    raft::Config conf;
+    conf.electionTick = 10;
+    conf.id = 0;
+    conf.clusterIds.push_back(0);
+    conf.clusterIds.push_back(1);
+    conf.clusterIds.push_back(2);
+    raft::Raft* raft = new raft::RaftImpl(conf);
+    raft->Bootstrap();
+    EXPECT_EQ(raft->GetState(), raft::StateFollower);
+}

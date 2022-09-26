@@ -20,7 +20,7 @@ void KVServiceImpl::Get(google::protobuf::RpcController* ctrl,
     brpc::ClosureGuard _guard(done);
     if (!mConsensusNode->IsLeader())
     {
-        response->set_retcode(Status::ERROR().Code());
+        response->set_retcode(RAFT_ERROR.Code());
         return;
     }
 
@@ -40,7 +40,7 @@ void KVServiceImpl::Put(google::protobuf::RpcController* ctrl,
     brpc::ClosureGuard _guard(done);
     if (!mConsensusNode->IsLeader())
     {
-        response->set_retcode(Status::ERROR().Code());
+        response->set_retcode(RAFT_ERROR.Code());
         return;
     }
 
@@ -68,7 +68,7 @@ void KVServiceImpl::Del(google::protobuf::RpcController* ctrl,
     brpc::ClosureGuard _guard(done);
     if (!mConsensusNode->IsLeader())
     {
-        response->set_retcode(Status::ERROR().Code());
+        response->set_retcode(RAFT_ERROR.Code());
         return;
     }
     raft::ServerId id = mConsensusNode->Id();
