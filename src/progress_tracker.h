@@ -2,6 +2,7 @@
 #define __RAFT_PROGRESS_TRACKER_H__
 
 #include <map>
+#include "src/progress.h"
 
 namespace raft
 {
@@ -20,8 +21,9 @@ public:
     VoteResult TallyVotes();
 
 private:
-    int                      mTotalNodes;
-    std::map<uint64_t, bool> mVotes;
+    int                             mTotalNodes;
+    std::map<uint64_t, bool>        mVotes;
+    std::map<uint64_t, Progress*>   mProgress;
 };
 
 }

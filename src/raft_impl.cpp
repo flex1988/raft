@@ -267,7 +267,7 @@ Status RaftImpl::stepCandidate(RaftMessage& msg)
             }
         }
         case MsgTimeoutNow:
-            LOG(INFO) << mId << " \[term " << msg.term << " state " << mState << " \] ignored MsgTimeoutNow from " << msg.from;
+            LOG(INFO) << mId <<  "[term " << msg.term << " state " << mState << " ] ignored MsgTimeoutNow from " << msg.from;
     }
     return RAFT_OK;
 }

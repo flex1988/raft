@@ -1,9 +1,7 @@
-#define private public
-
 #include "gtest/gtest.h"
 #include "src/include/raft.h"
+#define private public
 #include "src/raft_impl.h"
-
 
 namespace raft
 {

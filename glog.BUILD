@@ -59,7 +59,7 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
     deps = [
-        "//external:gflags",
+        "@com_github_gflags_gflags//:gflags",
     ],
 )
 

@@ -49,3 +49,8 @@ TEST_F(RaftFixture, LeaderElection)
     raft->Bootstrap();
     EXPECT_EQ(raft->GetState(), raft::StateFollower);
 }
+
+TEST_F(RaftFixture, ProgressLeader)
+{
+
+}
