@@ -43,6 +43,7 @@ struct RaftMessage
     //              entry
     uint64_t        commit;
     bool            reject;
+    std::vector<char*> entries;
     RaftMessage()
     : type(MsgNope),
       to(0),

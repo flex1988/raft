@@ -48,4 +48,13 @@ VoteResult ProgressTracker::TallyVotes()
     return result;
 }
 
+Progress* ProgressTracker::GetProgress(uint64_t id)
+{
+    if (mProgress.find(id) == mProgress.end())
+    {
+        mProgress[id] = new Progress;
+    }
+    return mProgress[id];
+}
+
 }

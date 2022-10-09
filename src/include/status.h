@@ -22,10 +22,17 @@ public:
 
     int Code() const { return code; }
 
+    bool operator==(const Status& other)
+    {
+        return this->code == other.Code();
+    }
+
 private:
     int code;
     std::string msg;
 };
+
+
 
 static Status RAFT_OK = Status(0, "");
 

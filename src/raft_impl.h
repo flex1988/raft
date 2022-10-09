@@ -26,6 +26,7 @@ public:
     void Advance();
 
     StateType GetState() const { return mState; }
+    Progress* GetProgress(uint64_t id) const { return mTracker->GetProgress(id);}
 
 private:
     void becomeFollower(uint64_t term, uint64_t leader);

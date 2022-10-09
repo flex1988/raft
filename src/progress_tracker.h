@@ -20,6 +20,8 @@ public:
 
     VoteResult TallyVotes();
 
+    Progress* GetProgress(uint64_t id);
+
 private:
     int                             mTotalNodes;
     std::map<uint64_t, bool>        mVotes;
