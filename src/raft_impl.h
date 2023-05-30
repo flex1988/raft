@@ -24,6 +24,7 @@ public:
     Status Step(RaftMessage&);
     void Ready();
     void Advance();
+    void LoadState(uint64_t term) { mCurrentTerm = term; }
 
     StateType GetState() const { return mState; }
     Progress* GetProgress(uint64_t id) const { return mTracker->GetProgress(id);}

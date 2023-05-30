@@ -95,6 +95,7 @@ Status RaftImpl::Step(RaftMessage& msg)
     {
         LOG(INFO) << mId << " [term: " << mCurrentTerm << "] ignored a " << msg.type <<
                 "message with lower term from " << msg.from << "[term: " << msg.term << "]";
+        return s;
     }
 
     switch (msg.type)
@@ -172,7 +173,6 @@ void RaftImpl::reset(uint64_t term)
 
 void RaftImpl::tickElection()
 {
-    LOG(INFO) << "tick election";
     mElectionElapsed++;
     if (pastElectionTimeout())
     {
@@ -312,4 +312,4 @@ void RaftImpl::submitMessage(RaftMessage& msg)
     mSendMsgs.push_back(msg);
 }
 
-}   
+}

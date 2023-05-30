@@ -23,12 +23,21 @@ public:
         switch (state)
         {
             case StateFollower:
+            {
                 raft->becomeFollower(1, 2);
+                break;
+            }
             case StateCandidate:
+            {
                 raft->becomeCandidate();
+                break;
+            }
             case StateLeader:
+            {
                 raft->becomeCandidate();
                 raft->becomeLeader();
+                break;
+            }
         }
 
         RaftMessage msg;
@@ -54,6 +63,39 @@ TEST_F(RaftPaperFixture, CandidateUpdateTermFromMessage)
 TEST_F(RaftPaperFixture, LeaderUpdateTermFromMessage)
 {
     testUpdateTermFromMessage(StateLeader);
+}
+
+static bool reject_stale_term_called = false;
+Status stepFake(RaftMessage& msg)
+{
+    reject_stale_term_called = true;
+    return RAFT_OK;
+}
+
+// TestRejectStaleTermMessage tests that if a server receives a request with
+// a stale term number, it rejects the request.
+// Our implementation ignores the request instead.
+// Reference: section 5.1
+TEST_F(RaftPaperFixture, RejectStaleTermMessage)
+{
+    RaftImpl* raft = newRaft(1, 10, 1);
+    raft->LoadState(2);
+    raft->mStepfunc = std::bind(&stepFake, std::placeholders::_1);
+
+    RaftMessage msg;
+    msg.type = MsgApp;
+    msg.term = raft->mCurrentTerm - 1;
+    raft->Step(msg);
+
+    EXPECT_FALSE(reject_stale_term_called);
+}
+
+// TestStartAsFollower tests that when servers start up, they begin as followers.
+// Reference: section 5.2
+TEST_F(RaftPaperFixture, StartAsFollower)
+{
+    RaftImpl* raft = newRaft(1, 10, 1);
+    EXPECT_EQ(raft->mState, StateFollower);
 }
 
 }
