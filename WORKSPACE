@@ -60,9 +60,15 @@ http_archive(
 
 http_archive(
     name = "com_github_brpc_brpc",
-    sha256 = "c0168d22205724bfa1939c9ad79bd9f74a98e0bd05be9e8f5cc504ef44c676a1",
-    strip_prefix = "incubator-brpc-1.0.0-rc02",
-    url = "https://github.com/apache/incubator-brpc/archive/refs/tags/1.0.0-rc02.tar.gz"
+    strip_prefix = "brpc-1.3.0",
+    url = "https://github.com/apache/brpc/archive/refs/tags/1.3.0.tar.gz"
+)
+
+http_archive(
+    name = "com_github_madler_zlib",
+    strip_prefix = "zlib-1.2.13",
+    build_file = "//:madler_zlib.BUILD",
+    url = "https://github.com/madler/zlib/archive/refs/tags/v1.2.13.tar.gz"
 )
 
 http_archive(
