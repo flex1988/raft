@@ -52,12 +52,12 @@ public:
 
 TEST_F(RaftPaperFixture, FollowerUpdateTermFromMessage)
 {
-    //testUpdateTermFromMessage(StateFollower);
+    testUpdateTermFromMessage(StateFollower);
 }
 
 TEST_F(RaftPaperFixture, CandidateUpdateTermFromMessage)
 {
-    //testUpdateTermFromMessage(StateCandidate);
+    testUpdateTermFromMessage(StateCandidate);
 }
 
 TEST_F(RaftPaperFixture, LeaderUpdateTermFromMessage)
@@ -96,6 +96,17 @@ TEST_F(RaftPaperFixture, StartAsFollower)
 {
     RaftImpl* raft = newRaft(1, 10, 1);
     EXPECT_EQ(raft->mState, StateFollower);
+}
+
+// TestLeaderBcastBeat tests that if the leader receives a heartbeat tick,
+// it will send a MsgHeartbeat with m.Index = 0, m.LogTerm=0 and empty entries
+// as heartbeat to all followers.
+// Reference: section 5.2
+TEST_F(RaftPaperFixture, LeaderBcastBeat)
+{
+    RaftImpl* raft = newRaft(1, 10, 1);
+    raft->becomeCandidate();
+    raft->becomeLeader();
 }
 
 }

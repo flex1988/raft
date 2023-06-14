@@ -1,4 +1,4 @@
-syntax="proto2";
+syntax="proto3";
 package raft;
 
 enum OpType
@@ -9,13 +9,13 @@ enum OpType
 
 message Command
 {
-    required OpType op = 1;
-    required bytes key = 2;
-    optional bytes val = 3;
+    OpType op = 1;
+    bytes key = 2;
+    bytes val = 3;
 };
 
 message ServerId
 {
-   required bytes ip = 1;
-   required int32 port = 2; 
+   bytes ip = 1;
+   int32 port = 2; 
 };

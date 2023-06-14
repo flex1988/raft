@@ -7,6 +7,7 @@
 #include "src/include/raft.h"
 #include "src/include/status.h"
 #include "src/progress_tracker.h"
+#include "src/proto/raft.pb.h"
 
 namespace raft
 {
@@ -36,6 +37,7 @@ private:
     Status stepFollower(RaftMessage&);
     Status stepCandidate(RaftMessage&);
     Status stepLeader(RaftMessage&);
+    bool appendEntry(std::vector<raft::LogEntry*> entries);
     void tickElection();
     void tickHeartbeat();
     void reset(uint64_t);

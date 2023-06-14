@@ -1,4 +1,5 @@
-syntax="proto2";
+syntax="proto3";
+
 package raft;
 
 option cc_generic_services = true;
@@ -7,9 +8,9 @@ import "src/proto/common.proto";
 
 message LogEntry
 {
-    required uint64 index = 1;
-    required uint64 term = 2;
-    required bytes  data = 3;
+    uint64 index = 1;
+    uint64 term = 2;
+    bytes  data = 3;
 };
 
 enum RoleType
@@ -22,32 +23,32 @@ enum RoleType
 
 message AppendEntriesRequest
 {
-    required uint64 term = 1;
-    required ServerId leader_id = 2;
-    required int64 prev_log_index = 3;
-    required uint64 prev_log_term = 4;
-    repeated LogEntry entries = 5;
-    required int64 leader_commit = 6;
+    uint64     term = 1;
+    ServerId   leader_id = 2;
+    int64      prev_log_index = 3;
+    uint64     prev_log_term = 4;
+    repeated   LogEntry   entries = 5;
+    int64      leader_commit = 6;
 };
 
 message AppendEntriesResponse
 {
-    required uint64 term = 1;
-    required bool success = 2;
+    uint64 term = 1;
+    bool   success = 2;
 };
 
 message RequestVoteRequest
 {
-    required uint64 term = 1;
-    required ServerId candidate_id = 2;
-    required int64 last_log_index = 3;
-    required uint64 last_log_term = 4;
+    uint64   term = 1;
+    ServerId candidate_id = 2;
+    int64    last_log_index = 3;
+    uint64   last_log_term = 4;
 };
 
 message RequestVoteResponse
 {
-    required uint64 term = 1;
-    required bool vote_granted = 2;
+    uint64 term = 1;
+    bool   vote_granted = 2;
 };
 
 service RaftService

@@ -33,7 +33,7 @@ TEST_F(RaftFixture, Tick)
     int electionTimeout = 25;
     for (int i = 0; i < electionTimeout; i++)
     {
-        sleep(1);
+        sleep(0.1);
         raft->Tick();
     }
 

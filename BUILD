@@ -15,12 +15,13 @@ cc_library(
     srcs = [
             "src/raft_service_impl.cpp",
             "src/kv_service_impl.cpp",
-            "src/consensus_node_impl.cpp",
             "src/raft_closure.cpp",
+            "src/consensus_node_impl.cpp",
             "src/util.cpp",
             "src/raft_impl.cpp",
             "src/progress_tracker.cpp",
-	        "src/progress.cpp"
+	    "src/progress.cpp",
+            "src/memory_storage.cpp"
     ],
     hdrs = [ 
             "src/include/raft_types.h",
@@ -33,7 +34,8 @@ cc_library(
             "src/raft_closure.h",
             "src/raft_impl.h",
             "src/progress_tracker.h",
-	        "src/progress.h",
+	    "src/progress.h",
+            "src/memory_storage.h"
     ],
     deps = [ 
 		":libraft_proto",
@@ -61,6 +63,7 @@ cc_binary(
         "src/unittest/raft_paper_unittest.cpp",
         "src/unittest/unittest_main.cpp",
         "src/unittest/raft_unittest_util.cpp",
+        "src/unittest/storage_unittest.cpp",
         "src/unittest/raft_unittest_util.h"
     ],
 

@@ -277,6 +277,11 @@ Status RaftImpl::stepLeader(RaftMessage& msg)
     return RAFT_OK;
 }
 
+bool RaftImpl::appendEntry(std::vector<raft::LogEntry*> entries)
+{
+    return true;
+}
+
 void RaftImpl::submitMessage(RaftMessage& msg)
 {
     if (msg.from == NONE_LEADER_ID)
