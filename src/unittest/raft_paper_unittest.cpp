@@ -1,5 +1,5 @@
 #include "gtest/gtest.h"
-#include "src/include/raft.h"
+#include "raft.h"
 #include "src/unittest/raft_unittest_util.h"
 
 namespace raft

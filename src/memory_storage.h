@@ -1,7 +1,7 @@
 #ifndef __STORAGE__
 #define __STORAGE__
 
-#include "src/include/raft.h"
+#include "raft.h"
 #include "src/proto/raft.pb.h"
 
 namespace raft
@@ -26,10 +26,13 @@ public:
 
     void Snapshot() { }
 
+    Status CreateSnapshot(uint64_t i, raft::ConfState* cs, char* data, raft::Snapshot* snapshot);
+
     void Append(const std::vector<raft::LogEntry*>& entries);
 
 private:
     std::vector<raft::LogEntry*> mEntries;
+    raft::Snapshot               mSnapshot;
 };
 }
 

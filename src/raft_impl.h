@@ -4,9 +4,9 @@
 #include <memory>
 #include <vector>
 
-#include "src/include/raft.h"
-#include "src/include/status.h"
-#include "src/progress_tracker.h"
+#include "raft.h"
+#include "status.h"
+#include "progress_tracker.h"
 #include "src/proto/raft.pb.h"
 
 namespace raft

@@ -100,7 +100,7 @@ TEST_F(StorageFixture, Entries)
         std::unique_ptr<MemoryStorage> mem = std::move(prepareEntries(logs, 8));
         std::vector<raft::LogEntry*> fetch;
         Status s = mem->Entries(2, 6, fetch);
-        EXPECT_EQ(s.Code(), ERROR_MEMORYSTORAGE_COMPACTED.Code());
+        EXPECT_EQ(s.Code(), ERROR_MEMSTOR_COMPACTED.Code());
         EXPECT_TRUE(fetch.empty());
     }
 
@@ -109,7 +109,7 @@ TEST_F(StorageFixture, Entries)
         std::unique_ptr<MemoryStorage> mem = std::move(prepareEntries(logs, 8));
         std::vector<raft::LogEntry*> fetch;
         Status s = mem->Entries(3, 4, fetch);
-        EXPECT_EQ(s.Code(), ERROR_MEMORYSTORAGE_COMPACTED.Code());
+        EXPECT_EQ(s.Code(), ERROR_MEMSTOR_COMPACTED.Code());
         EXPECT_TRUE(fetch.empty());
     }
 
@@ -188,5 +188,95 @@ TEST_F(StorageFixture, Append)
         EXPECT_EQ(mem->mEntries[1]->term(), 4);
         EXPECT_EQ(mem->mEntries[2]->index(), 5);
         EXPECT_EQ(mem->mEntries[2]->term(), 5);
+    }
+
+    {
+        int logs[6] = {3, 3, 4, 4, 5, 5};
+        std::unique_ptr<MemoryStorage> mem = std::move(prepareEntries(logs, 6));
+        std::vector<raft::LogEntry*> append;
+        append.push_back(allocEntry(3, 3, NULL));
+        append.push_back(allocEntry(4, 6, NULL));
+        append.push_back(allocEntry(5, 6, NULL));
+        mem->Append(append);
+
+        EXPECT_EQ(mem->mEntries.size(), 3);
+        EXPECT_EQ(mem->mEntries[0]->index(), 3);
+        EXPECT_EQ(mem->mEntries[0]->term(), 3);
+        EXPECT_EQ(mem->mEntries[1]->index(), 4);
+        EXPECT_EQ(mem->mEntries[1]->term(), 6);
+        EXPECT_EQ(mem->mEntries[2]->index(), 5);
+        EXPECT_EQ(mem->mEntries[2]->term(), 6);
+    }
+
+    {
+        int logs[6] = {3, 3, 4, 4, 5, 5};
+        std::unique_ptr<MemoryStorage> mem = std::move(prepareEntries(logs, 6));
+        std::vector<raft::LogEntry*> append;
+        append.push_back(allocEntry(3, 3, NULL));
+        append.push_back(allocEntry(4, 4, NULL));
+        append.push_back(allocEntry(5, 5, NULL));
+        append.push_back(allocEntry(6, 5, NULL));
+        mem->Append(append);
+
+        EXPECT_EQ(mem->mEntries.size(), 4);
+        EXPECT_EQ(mem->mEntries[0]->index(), 3);
+        EXPECT_EQ(mem->mEntries[0]->term(), 3);
+        EXPECT_EQ(mem->mEntries[1]->index(), 4);
+        EXPECT_EQ(mem->mEntries[1]->term(), 4);
+        EXPECT_EQ(mem->mEntries[2]->index(), 5);
+        EXPECT_EQ(mem->mEntries[2]->term(), 5);
+        EXPECT_EQ(mem->mEntries[3]->index(), 6);
+        EXPECT_EQ(mem->mEntries[3]->term(), 5);
+    }
+
+    // Truncate incoming entries, truncate the existing entries and append.
+    {
+        int logs[6] = {3, 3, 4, 4, 5, 5};
+        std::unique_ptr<MemoryStorage> mem = std::move(prepareEntries(logs, 6));
+        std::vector<raft::LogEntry*> append;
+        append.push_back(allocEntry(2, 3, NULL));
+        append.push_back(allocEntry(3, 3, NULL));
+        append.push_back(allocEntry(4, 5, NULL));
+        mem->Append(append);
+
+        EXPECT_EQ(mem->mEntries.size(), 2);
+        EXPECT_EQ(mem->mEntries[0]->index(), 3);
+        EXPECT_EQ(mem->mEntries[0]->term(), 3);
+        EXPECT_EQ(mem->mEntries[1]->index(), 4);
+        EXPECT_EQ(mem->mEntries[1]->term(), 5);
+    }
+
+    // Truncate the existing entries and append.
+    {
+        int logs[6] = {3, 3, 4, 4, 5, 5};
+        std::unique_ptr<MemoryStorage> mem = std::move(prepareEntries(logs, 6));
+        std::vector<raft::LogEntry*> append;
+        append.push_back(allocEntry(4, 5, NULL));
+        mem->Append(append);
+
+        EXPECT_EQ(mem->mEntries.size(), 2);
+        EXPECT_EQ(mem->mEntries[0]->index(), 3);
+        EXPECT_EQ(mem->mEntries[0]->term(), 3);
+        EXPECT_EQ(mem->mEntries[1]->index(), 4);
+        EXPECT_EQ(mem->mEntries[1]->term(), 5);
+    }
+
+    // Direct append.
+    {
+        int logs[6] = {3, 3, 4, 4, 5, 5};
+        std::unique_ptr<MemoryStorage> mem = std::move(prepareEntries(logs, 6));
+        std::vector<raft::LogEntry*> append;
+        append.push_back(allocEntry(6, 5, NULL));
+        mem->Append(append);
+
+        EXPECT_EQ(mem->mEntries.size(), 4);
+        EXPECT_EQ(mem->mEntries[0]->index(), 3);
+        EXPECT_EQ(mem->mEntries[0]->term(), 3);
+        EXPECT_EQ(mem->mEntries[1]->index(), 4);
+        EXPECT_EQ(mem->mEntries[1]->term(), 4);
+        EXPECT_EQ(mem->mEntries[2]->index(), 5);
+        EXPECT_EQ(mem->mEntries[2]->term(), 5);
+        EXPECT_EQ(mem->mEntries[3]->index(), 6);
+        EXPECT_EQ(mem->mEntries[3]->term(), 5);
     }
 }

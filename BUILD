@@ -20,7 +20,8 @@ cc_library(
             "src/util.cpp",
             "src/raft_impl.cpp",
             "src/progress_tracker.cpp",
-	    "src/progress.cpp",
+	        "src/progress.cpp",
+            "src/raft_status.cpp",
             "src/memory_storage.cpp"
     ],
     hdrs = [ 
@@ -34,7 +35,7 @@ cc_library(
             "src/raft_closure.h",
             "src/raft_impl.h",
             "src/progress_tracker.h",
-	    "src/progress.h",
+	        "src/progress.h",
             "src/memory_storage.h"
     ],
     deps = [ 

@@ -1,5 +1,5 @@
 #include "memory_storage.h"
-#include "src/include/status.h"
+#include "status.h"
 
 namespace raft
 {
@@ -23,7 +23,7 @@ Status MemoryStorage::Entries(uint64_t low, uint64_t high, std::vector<raft::Log
     uint64_t offset = mEntries[0]->index();
     if (low <= offset)
     {
-        return ERROR_MEMORYSTORAGE_COMPACTED;
+        return ERROR_MEMSTOR_COMPACTED;
     }
     if (high > LastIndex() + 1)
     {
@@ -32,7 +32,7 @@ Status MemoryStorage::Entries(uint64_t low, uint64_t high, std::vector<raft::Log
     // only contains dummy entries
     if (mEntries.size() == 1)
     {
-        return ERROR_MEMORYSTORAGE_UNAVAILABLE;
+        return ERROR_MEMSTOR_UNAVAILABLE;
     }
 
     entries.reserve(high - low + 1);
@@ -55,21 +55,23 @@ void MemoryStorage::Append(const std::vector<raft::LogEntry*>& entries)
     }
 
     int start = 0;
+    std::vector<raft::LogEntry*> truncate;
     if (first > entries[0]->index())
     {
         start = first - entries[0]->index();
     }
 
-    uint64_t offset = entries[0]->index() - mEntries[0]->index();
+    uint64_t offset = entries[start]->index() - mEntries[0]->index();
     if (mEntries.size() > offset)
     {
-        mEntries.resize(offset + entries.size());
-        memcpy(&mEntries[offset + start], &entries[start], sizeof(void*) * (entries.size() - start));
+        mEntries.resize(offset + entries.size() - start);
+        memcpy(&mEntries[offset], &entries[start], sizeof(void*) * (entries.size() - start));
     }
     else if (mEntries.size() == offset)
     {
-        mEntries.resize(mEntries.size() + entries.size());
-        memcpy(&mEntries[mEntries.size()], &entries[start], sizeof(void*) * (entries.size() - start));
+        int oldSize = mEntries.size();
+        mEntries.resize(mEntries.size() + entries.size() - start);
+        memcpy(&mEntries[oldSize], &entries[start], sizeof(void*) * (entries.size() - start));
     }
     else
     {
@@ -99,6 +101,15 @@ uint64_t MemoryStorage::FirstIndex()
 uint64_t MemoryStorage::LastIndex()
 {
     return mEntries[0]->index() + mEntries.size() - 1;
+}
+
+Status MemoryStorage::CreateSnapshot(uint64_t i, raft::ConfState* cs, char* data, raft::Snapshot* snapshot)
+{
+    if (i <= mSnapshot.meta().index())
+    {
+        return ERROR_MEMSTOR_SNAP_OUTOFDATE;
+    }
+    return RAFT_OK;
 }
 
 

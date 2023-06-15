@@ -5,6 +5,8 @@ build --copt -DHAVE_ZLIB=1
 build --sandbox_debug
 build --copt -g
 build --copt -O0
+build --copt -Isrc/include
+build --copt -Isrc
 build --action_env=BAZEL_CXXOPTS="-std=c++14"
 build --strip=never
 build --profile=bazel-profile
