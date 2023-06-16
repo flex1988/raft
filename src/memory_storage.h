@@ -26,7 +26,7 @@ public:
 
     void Snapshot() { }
 
-    Status CreateSnapshot(uint64_t i, raft::ConfState* cs, char* data, raft::Snapshot* snapshot);
+    Status CreateSnapshot(uint64_t i, raft::ConfState* cs, std::string* data, raft::Snapshot* snapshot);
 
     void Append(const std::vector<raft::LogEntry*>& entries);
 

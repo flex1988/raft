@@ -280,3 +280,44 @@ TEST_F(StorageFixture, Append)
         EXPECT_EQ(mem->mEntries[3]->term(), 5);
     }
 }
+
+TEST_F(StorageFixture, CreateSnapshot)
+{
+    int logs[6] = {3, 3, 4, 4, 5, 5};
+    std::unique_ptr<MemoryStorage> mem = std::move(prepareEntries(logs, 6));  
+
+    {
+        raft::ConfState* cs = new raft::ConfState;
+        cs->add_voters(1);
+        cs->add_voters(2);
+        cs->add_voters(3);
+        std::string* data = new std::string("data");
+        raft::Snapshot snapshot;
+
+        Status s = mem->CreateSnapshot(4, cs, data, &snapshot);
+        EXPECT_TRUE(s.IsOK());
+        EXPECT_EQ(snapshot.meta().index(), 4);
+        EXPECT_EQ(snapshot.meta().term(), 4);
+        EXPECT_EQ(snapshot.meta().confstate().voters(0), 1);
+        EXPECT_EQ(snapshot.meta().confstate().voters(1), 2);
+        EXPECT_EQ(snapshot.meta().confstate().voters(2), 3);
+    }
+
+
+    {
+        raft::ConfState* cs = new raft::ConfState;
+        cs->add_voters(1);
+        cs->add_voters(2);
+        cs->add_voters(3);
+        std::string* data = new std::string("data");
+        raft::Snapshot snapshot;
+
+        Status s = mem->CreateSnapshot(5, cs, data, &snapshot);
+        EXPECT_TRUE(s.IsOK());
+        EXPECT_EQ(snapshot.meta().index(), 5);
+        EXPECT_EQ(snapshot.meta().term(), 5);
+        EXPECT_EQ(snapshot.meta().confstate().voters(0), 1);
+        EXPECT_EQ(snapshot.meta().confstate().voters(1), 2);
+        EXPECT_EQ(snapshot.meta().confstate().voters(2), 3);
+    }
+}

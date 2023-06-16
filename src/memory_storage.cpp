@@ -1,3 +1,5 @@
+#include <butil/logging.h>
+
 #include "memory_storage.h"
 #include "status.h"
 
@@ -103,12 +105,24 @@ uint64_t MemoryStorage::LastIndex()
     return mEntries[0]->index() + mEntries.size() - 1;
 }
 
-Status MemoryStorage::CreateSnapshot(uint64_t i, raft::ConfState* cs, char* data, raft::Snapshot* snapshot)
+Status MemoryStorage::CreateSnapshot(uint64_t i, raft::ConfState* cs, std::string* data, raft::Snapshot* snapshot)
 {
     if (i <= mSnapshot.meta().index())
     {
         return ERROR_MEMSTOR_SNAP_OUTOFDATE;
     }
+
+    uint64_t offset = mEntries[0]->index();
+    CHECK_LE(i, LastIndex()) << "snapshot is out of bound lastindex";
+
+    mSnapshot.mutable_meta()->set_index(i);
+    mSnapshot.mutable_meta()->set_term(mEntries[i - offset]->term());
+    if (cs != NULL)
+    {
+        mSnapshot.mutable_meta()->set_allocated_confstate(cs);
+    }
+    mSnapshot.set_allocated_data(data);
+    snapshot->CopyFrom(mSnapshot);
     return RAFT_OK;
 }
 
