@@ -28,6 +28,10 @@ public:
 
     Status CreateSnapshot(uint64_t i, raft::ConfState* cs, std::string* data, raft::Snapshot* snapshot);
 
+    Status ApplySnapshot(const raft::Snapshot& snapshot);
+
+    Status Compact(uint64_t compactIndex);
+
     void Append(const std::vector<raft::LogEntry*>& entries);
 
 private:

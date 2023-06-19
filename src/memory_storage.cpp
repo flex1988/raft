@@ -126,5 +126,54 @@ Status MemoryStorage::CreateSnapshot(uint64_t i, raft::ConfState* cs, std::strin
     return RAFT_OK;
 }
 
+Status MemoryStorage::ApplySnapshot(const raft::Snapshot& snapshot)
+{
+    uint64_t currentSnapshotIndex = mSnapshot.meta().index();
+    uint64_t snapshotIndex = snapshot.meta().index();
+    if (currentSnapshotIndex >= snapshotIndex)
+    {
+        return ERROR_MEMSTOR_SNAP_OUTOFDATE;
+    }
+    mSnapshot.CopyFrom(snapshot);
+    for (int i = 0; i < mEntries.size(); i++)
+    {
+        delete mEntries[i];
+    }
+    mEntries.clear();
+    raft::LogEntry* log = new raft::LogEntry;
+    log->set_term(snapshot.meta().term());
+    log->set_index(snapshot.meta().index());
+    mEntries.push_back(log);
+    return RAFT_OK;
+}
+
+Status MemoryStorage::Compact(uint64_t compactIndex)
+{
+    uint64_t offset = mEntries[0]->index();
+    if (compactIndex <= offset)
+    {
+        return ERROR_MEMSTOR_COMPACTED;
+    }
+
+    CHECK_LE(compactIndex, LastIndex()) << "compact is out of bound lastIndex";
+    uint64_t i = compactIndex - offset;
+    raft::LogEntry* log = new raft::LogEntry;
+    log->set_index(mEntries[i]->index());
+    log->set_term(mEntries[i]->term());
+    std::vector<raft::LogEntry*> newEntries;
+    newEntries.push_back(log);
+    for (int j = 0; j < i; j++)
+    {
+        delete mEntries[j];
+    }
+    i++;
+    for (; i < mEntries.size(); i++)
+    {
+        newEntries.push_back(mEntries[i]);
+    }
+    mEntries = newEntries;
+    return RAFT_OK;
+}
+
 
 }
