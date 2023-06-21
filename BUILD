@@ -22,7 +22,8 @@ cc_library(
             "src/progress_tracker.cpp",
 	        "src/progress.cpp",
             "src/raft_status.cpp",
-            "src/memory_storage.cpp"
+            "src/memory_storage.cpp",
+            "src/raft_unstable_log.cpp"
     ],
     hdrs = [ 
             "src/include/raft_types.h",
@@ -36,7 +37,8 @@ cc_library(
             "src/raft_impl.h",
             "src/progress_tracker.h",
 	        "src/progress.h",
-            "src/memory_storage.h"
+            "src/memory_storage.h",
+            "src/raft_unstable_log.h"
     ],
     deps = [ 
 		":libraft_proto",

@@ -71,9 +71,7 @@ void MemoryStorage::Append(const std::vector<raft::LogEntry*>& entries)
     }
     else if (mEntries.size() == offset)
     {
-        int oldSize = mEntries.size();
-        mEntries.resize(mEntries.size() + entries.size() - start);
-        memcpy(&mEntries[oldSize], &entries[start], sizeof(void*) * (entries.size() - start));
+        mEntries.insert(mEntries.end(), entries.begin() + start, entries.end());
     }
     else
     {

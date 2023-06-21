@@ -1,8 +1,8 @@
 #include <butil/logging.h>
 #include <memory>
 
-#include "src/raft_impl.h"
-#include "src/progress_tracker.h"
+#include "raft_impl.h"
+#include "progress_tracker.h"
 
 namespace raft
 {

@@ -58,14 +58,14 @@ private:
     int                                     mElectionTimeout;
 
     // randomizedElectionTimeout is a random number between
-	// [electiontimeout, 2 * electiontimeout - 1]. It gets reset
-	// when raft changes its state to follower or candidate.
+    // [electiontimeout, 2 * electiontimeout - 1]. It gets reset
+    // when raft changes its state to follower or candidate.
 	int                                     mRandomizedElectionTimeout;
 
     // number of ticks since it reached last electionTimeout when it is leader
-	// or candidate.
-	// number of ticks since it reached last electionTimeout or received a
-	// valid message from current leader when it is a follower.
+    // or candidate.
+    // number of ticks since it reached last electionTimeout or received a
+    // valid message from current leader when it is a follower.
     int                                     mElectionElapsed;
     int                                     mHeartbeatElapsed;
     // raft log
