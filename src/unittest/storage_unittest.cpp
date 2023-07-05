@@ -44,52 +44,45 @@ public:
         std::unique_ptr<MemoryStorage> mem = std::move(allocMemoryStorage(entries));    
         return mem;
     }
+
+    void SetUp()
+    {
+        std::vector<raft::LogEntry*> entries;
+        entries.push_back(allocEntry(3, 3, NULL));
+        entries.push_back(allocEntry(4, 4, NULL));
+        entries.push_back(allocEntry(5, 5, NULL));
+
+        mMemStor = std::move(allocMemoryStorage(entries));
+    }
+
+    void TearDown()
+    {
+    }
+
+    std::unique_ptr<MemoryStorage> mMemStor;
 };
 
 TEST_F(StorageFixture, Term)
 {
-    std::vector<raft::LogEntry*> entries;
-    entries.push_back(allocEntry(3, 3, NULL));
-    entries.push_back(allocEntry(4, 4, NULL));
-    entries.push_back(allocEntry(5, 5, NULL));
-
-    std::unique_ptr<MemoryStorage> mem = std::move(allocMemoryStorage(entries));
-
-    EXPECT_EQ(mem->Term(2), 0);
-    EXPECT_EQ(mem->Term(3), 3);
-    EXPECT_EQ(mem->Term(4), 4);
-    EXPECT_EQ(mem->Term(5), 5);
-    EXPECT_EQ(mem->Term(6), 0);
+    EXPECT_EQ(mMemStor->Term(2), 0);
+    EXPECT_EQ(mMemStor->Term(3), 3);
+    EXPECT_EQ(mMemStor->Term(4), 4);
+    EXPECT_EQ(mMemStor->Term(5), 5);
+    EXPECT_EQ(mMemStor->Term(6), 0);
 }
 
 TEST_F(StorageFixture, LastIndex)
 {
-    std::vector<raft::LogEntry*> entries;
-    entries.push_back(allocEntry(3, 3, NULL));
-    entries.push_back(allocEntry(4, 4, NULL));
-    entries.push_back(allocEntry(5, 5, NULL));
-
-    std::unique_ptr<MemoryStorage> mem = std::move(allocMemoryStorage(entries));
-    
-    EXPECT_EQ(mem->LastIndex(), 5);
-
+    EXPECT_EQ(mMemStor->LastIndex(), 5);
     std::vector<raft::LogEntry*> newLog;
     newLog.push_back(allocEntry(6, 5, NULL));
-    mem->Append(newLog);
-
-    EXPECT_EQ(mem->LastIndex(), 6);
+    mMemStor->Append(newLog);
+    EXPECT_EQ(mMemStor->LastIndex(), 6);
 }
 
 TEST_F(StorageFixture, FirstIndex)
 {
-    std::vector<raft::LogEntry*> entries;
-    entries.push_back(allocEntry(3, 3, NULL));
-    entries.push_back(allocEntry(4, 4, NULL));
-    entries.push_back(allocEntry(5, 5, NULL));
-
-    std::unique_ptr<MemoryStorage> mem = std::move(allocMemoryStorage(entries));
-
-    EXPECT_EQ(mem->FirstIndex(), 4);
+    EXPECT_EQ(mMemStor->FirstIndex(), 4);
     // TODO Compact
 }
 
@@ -283,9 +276,6 @@ TEST_F(StorageFixture, Append)
 
 TEST_F(StorageFixture, CreateSnapshot)
 {
-    int logs[6] = {3, 3, 4, 4, 5, 5};
-    std::unique_ptr<MemoryStorage> mem = std::move(prepareEntries(logs, 6));  
-
     {
         raft::ConfState* cs = new raft::ConfState;
         cs->add_voters(1);
@@ -294,7 +284,7 @@ TEST_F(StorageFixture, CreateSnapshot)
         std::string* data = new std::string("data");
         raft::Snapshot snapshot;
 
-        Status s = mem->CreateSnapshot(4, cs, data, &snapshot);
+        Status s = mMemStor->CreateSnapshot(4, cs, data, &snapshot);
         EXPECT_TRUE(s.IsOK());
         EXPECT_EQ(snapshot.meta().index(), 4);
         EXPECT_EQ(snapshot.meta().term(), 4);
@@ -303,7 +293,6 @@ TEST_F(StorageFixture, CreateSnapshot)
         EXPECT_EQ(snapshot.meta().confstate().voters(2), 3);
     }
 
-
     {
         raft::ConfState* cs = new raft::ConfState;
         cs->add_voters(1);
@@ -312,7 +301,7 @@ TEST_F(StorageFixture, CreateSnapshot)
         std::string* data = new std::string("data");
         raft::Snapshot snapshot;
 
-        Status s = mem->CreateSnapshot(5, cs, data, &snapshot);
+        Status s = mMemStor->CreateSnapshot(5, cs, data, &snapshot);
         EXPECT_TRUE(s.IsOK());
         EXPECT_EQ(snapshot.meta().index(), 5);
         EXPECT_EQ(snapshot.meta().term(), 5);

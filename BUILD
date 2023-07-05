@@ -67,6 +67,7 @@ cc_binary(
         "src/unittest/unittest_main.cpp",
         "src/unittest/raft_unittest_util.cpp",
         "src/unittest/storage_unittest.cpp",
+        "src/unittest/unstable_log_unittest.cpp",
         "src/unittest/raft_unittest_util.h"
     ],
 

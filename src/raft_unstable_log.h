@@ -11,6 +11,8 @@ class RaftUnstable
 public:
     RaftUnstable();
 
+    ~RaftUnstable();
+
 private:
     // maybeFirstIndex returns the index of the first possible entry in entries
     // if it has a snapshot.

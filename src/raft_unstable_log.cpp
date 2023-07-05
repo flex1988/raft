@@ -5,6 +5,16 @@
 namespace raft
 {
 
+RaftUnstable::RaftUnstable()
+: mSnapshot(NULL), mOffset(0), mSnapshotInProgress(false), mOffsetInProgress(0)
+{
+}
+
+RaftUnstable::~RaftUnstable()
+{
+
+}
+
 uint64_t RaftUnstable::maybeTerm(uint64_t i)
 {
     if (i < mOffset)
@@ -53,7 +63,7 @@ std::vector<raft::LogEntry*> RaftUnstable::nextEntries()
     {
         return entries;
     }
-    for (int i = inProgress; i < mEntries.size(); i++)
+    for (uint i = inProgress; i < mEntries.size(); i++)
     {
         entries.push_back(mEntries[i]);
     }
@@ -104,7 +114,7 @@ void RaftUnstable::stableTo(uint64_t i, uint64_t t)
 
     int truncate = i + 1 - mOffset;
     std::vector<raft::LogEntry*> newEntries;
-    for (int i = 0; i < mEntries.size(); i++)
+    for (uint i = 0; i < mEntries.size(); i++)
     {
         if (i < truncate)
         {
@@ -138,7 +148,7 @@ void RaftUnstable::restore(raft::Snapshot* snapshot)
 {
     mOffset = snapshot->meta().index() + 1;
     mOffsetInProgress = mOffset;
-    for (int i = 0; i < mEntries.size(); i++)
+    for (uint i = 0; i < mEntries.size(); i++)
     {
         delete mEntries[i];
     }
