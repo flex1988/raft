@@ -159,10 +159,10 @@ void RaftUnstable::restore(raft::Snapshot* snapshot)
 
 void RaftUnstable::truncateAndAppend(std::vector<raft::LogEntry*> entries)
 {
-    uint64_t fromIndex = (*entries.begin())->index();
-    if (fromIndex == mOffset + entries.size())
+    uint64_t fromIndex = entries[0]->index();
+    if (fromIndex == mOffset + mEntries.size())
     {
-        mEntries.insert(mEntries.begin(), entries.begin(), entries.end());
+        mEntries.insert(mEntries.end(), entries.begin(), entries.end());
     }
     else if (fromIndex <= mOffset)
     {
@@ -173,8 +173,7 @@ void RaftUnstable::truncateAndAppend(std::vector<raft::LogEntry*> entries)
     }
     else
     {
-        std::vector<raft::LogEntry*> keep = slice(mOffset, fromIndex);
-        mEntries = keep;
+        mEntries = slice(mOffset, fromIndex);
         mEntries.insert(mEntries.end(), entries.begin(), entries.end());
         mOffsetInProgress = std::min(mOffsetInProgress, fromIndex);
     }
@@ -184,6 +183,19 @@ void RaftUnstable::truncateAndAppend(std::vector<raft::LogEntry*> entries)
 std::vector<raft::LogEntry*> RaftUnstable::slice(uint64_t low, uint64_t high)
 {
     mustCheckOutOfBounds(low, high);
+    std::vector<raft::LogEntry*> s;
+    for (uint i = 0; i < mEntries.size(); i++)
+    {
+        if (i < low - mOffset || i >= high - mOffset)
+        {
+            delete mEntries[i];
+        }
+        else
+        {
+            s.push_back(mEntries[i]);
+        }
+    }
+    return s;
 }
 
 // u.offset <= lo <= hi <= u.offset+len(u.entries)

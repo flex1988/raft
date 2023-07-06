@@ -31,6 +31,14 @@ protected:
         unstable->mEntries.push_back(log);
     }
 
+    raft::LogEntry* makeEntry(uint64_t index, uint64_t term)
+    {
+        raft::LogEntry* log = new raft::LogEntry;
+        log->set_index(index);
+        log->set_term(term);
+        return log;
+    }
+
     void addSnapshot(RaftUnstable* unstable, uint64_t term, uint64_t index)
     {
         raft::Snapshot* snapshot = new raft::Snapshot;
@@ -116,7 +124,7 @@ TEST_F(UnstableFixture, MaybeLastIndex)
 
 
 
-TEST_F(UnstableFixture, MaybeTerm0)
+TEST_F(UnstableFixture, MaybeTerm)
 {
     {
         std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
@@ -492,6 +500,359 @@ TEST_F(UnstableFixture, AcceptInProgress)
 TEST_F(UnstableFixture, StableTo)
 {
     {
-        
+        std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
+        unstable->stableTo(5, 1);
+        EXPECT_EQ(unstable->mOffset, 0);
+        EXPECT_EQ(unstable->mOffsetInProgress, 0);
+        EXPECT_EQ(unstable->mEntries.size(), 0);
+    }
+
+    {
+        std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
+        addEntry(unstable.get(), 1, 5);
+        unstable->mOffset = 5;
+        unstable->mOffsetInProgress = 6;
+        unstable->stableTo(5, 1);
+        EXPECT_EQ(unstable->mOffset, 6);
+        EXPECT_EQ(unstable->mOffsetInProgress, 6);
+        EXPECT_EQ(unstable->mEntries.size(), 0);
+    }
+
+    {
+        std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
+        addEntry(unstable.get(), 1, 5);
+        addEntry(unstable.get(), 1, 6);
+        unstable->mOffset = 5;
+        unstable->mOffsetInProgress = 6;
+        unstable->stableTo(5, 1);
+        EXPECT_EQ(unstable->mOffset, 6);
+        EXPECT_EQ(unstable->mOffsetInProgress, 6);
+        EXPECT_EQ(unstable->mEntries.size(), 1);
+    }
+
+    {
+        std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
+        addEntry(unstable.get(), 1, 5);
+        addEntry(unstable.get(), 1, 6);
+        unstable->mOffset = 5;
+        unstable->mOffsetInProgress = 7;
+        unstable->stableTo(5, 1);
+        EXPECT_EQ(unstable->mOffset, 6);
+        EXPECT_EQ(unstable->mOffsetInProgress, 7);
+        EXPECT_EQ(unstable->mEntries.size(), 1);
+    }
+
+    // stable to the first entry and term mismatch
+    {
+        std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
+        addEntry(unstable.get(), 2, 6);
+        unstable->mOffset = 6;
+        unstable->mOffsetInProgress = 7;
+        unstable->stableTo(6, 1);
+        EXPECT_EQ(unstable->mOffset, 6);
+        EXPECT_EQ(unstable->mOffsetInProgress, 7);
+        EXPECT_EQ(unstable->mEntries.size(), 1);
+    }
+
+    // stable to old entry
+    {
+        std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
+        addEntry(unstable.get(), 1, 5);
+        unstable->mOffset = 5;
+        unstable->mOffsetInProgress = 6;
+        unstable->stableTo(4, 1);
+        EXPECT_EQ(unstable->mOffset, 5);
+        EXPECT_EQ(unstable->mOffsetInProgress, 6);
+        EXPECT_EQ(unstable->mEntries.size(), 1);
+    }
+
+    // stable to old entry
+    {
+        std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
+        addEntry(unstable.get(), 1, 5);
+        unstable->mOffset = 5;
+        unstable->mOffsetInProgress = 6;
+        unstable->stableTo(4, 2);
+        EXPECT_EQ(unstable->mOffset, 5);
+        EXPECT_EQ(unstable->mOffsetInProgress, 6);
+        EXPECT_EQ(unstable->mEntries.size(), 1);
+    }
+
+    // stable to the first entry
+    {
+        std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
+        addEntry(unstable.get(), 1, 5);
+        addSnapshot(unstable.get(), 1, 4);
+        unstable->mOffset = 5;
+        unstable->mOffsetInProgress = 6;
+        unstable->stableTo(5, 1);
+        EXPECT_EQ(unstable->mOffset, 6);
+        EXPECT_EQ(unstable->mOffsetInProgress, 6);
+        EXPECT_EQ(unstable->mEntries.size(), 0);
+    }
+
+    // stable to the first entry
+    {
+        std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
+        addEntry(unstable.get(), 1, 5);
+        addEntry(unstable.get(), 1, 6);
+        addSnapshot(unstable.get(), 1, 4);
+        unstable->mOffset = 5;
+        unstable->mOffsetInProgress = 6;
+        unstable->stableTo(5, 1);
+        EXPECT_EQ(unstable->mOffset, 6);
+        EXPECT_EQ(unstable->mOffsetInProgress, 6);
+        EXPECT_EQ(unstable->mEntries.size(), 1);
+    }
+
+    // stable to the first entry
+    {
+        std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
+        addEntry(unstable.get(), 1, 5);
+        addEntry(unstable.get(), 1, 6);
+        addSnapshot(unstable.get(), 1, 4);
+        unstable->mOffset = 5;
+        unstable->mOffsetInProgress = 7;
+        unstable->stableTo(5, 1);
+        EXPECT_EQ(unstable->mOffset, 6);
+        EXPECT_EQ(unstable->mOffsetInProgress, 7);
+        EXPECT_EQ(unstable->mEntries.size(), 1);
+    }
+
+    // stable to the first entry
+    {
+        std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
+        addEntry(unstable.get(), 1, 5);
+        addSnapshot(unstable.get(), 1, 4);
+        unstable->mOffset = 5;
+        unstable->mOffsetInProgress = 6;
+        unstable->stableTo(4, 1);
+        EXPECT_EQ(unstable->mOffset, 5);
+        EXPECT_EQ(unstable->mOffsetInProgress, 6);
+        EXPECT_EQ(unstable->mEntries.size(), 1);
+    }
+
+    // stable to the first entry
+    {
+        std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
+        addEntry(unstable.get(), 2, 5);
+        addSnapshot(unstable.get(), 2, 4);
+        unstable->mOffset = 5;
+        unstable->mOffsetInProgress = 6;
+        unstable->stableTo(4, 1);
+        EXPECT_EQ(unstable->mOffset, 5);
+        EXPECT_EQ(unstable->mOffsetInProgress, 6);
+        EXPECT_EQ(unstable->mEntries.size(), 1);
+    }
+}
+
+TEST_F(UnstableFixture, TruncateAndAppend)
+{
+    // append to the end
+    {
+        std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
+        addEntry(unstable.get(), 1, 5);
+        unstable->mOffset = 5;
+        unstable->mOffsetInProgress = 5;
+
+        std::vector<LogEntry*> toAppend;
+        toAppend.push_back(makeEntry(6, 1));
+        toAppend.push_back(makeEntry(7, 1));
+
+        unstable->truncateAndAppend(toAppend);
+
+        EXPECT_EQ(unstable->mOffset, 5);
+        EXPECT_EQ(unstable->mOffsetInProgress, 5);
+        EXPECT_EQ(unstable->mEntries.size(), 3);
+        EXPECT_EQ(unstable->mEntries[0]->index(), 5);
+        EXPECT_EQ(unstable->mEntries[0]->term(), 1);
+        EXPECT_EQ(unstable->mEntries[1]->index(), 6);
+        EXPECT_EQ(unstable->mEntries[1]->term(), 1);
+        EXPECT_EQ(unstable->mEntries[2]->index(), 7);
+        EXPECT_EQ(unstable->mEntries[2]->term(), 1);
+    }
+
+    {
+        std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
+        addEntry(unstable.get(), 1, 5);
+        unstable->mOffset = 5;
+        unstable->mOffsetInProgress = 6;
+
+        std::vector<LogEntry*> toAppend;
+        toAppend.push_back(makeEntry(6, 1));
+        toAppend.push_back(makeEntry(7, 1));
+
+        unstable->truncateAndAppend(toAppend);
+
+        EXPECT_EQ(unstable->mOffset, 5);
+        EXPECT_EQ(unstable->mOffsetInProgress, 6);
+        EXPECT_EQ(unstable->mEntries.size(), 3);
+        EXPECT_EQ(unstable->mEntries[0]->index(), 5);
+        EXPECT_EQ(unstable->mEntries[0]->term(), 1);
+        EXPECT_EQ(unstable->mEntries[1]->index(), 6);
+        EXPECT_EQ(unstable->mEntries[1]->term(), 1);
+        EXPECT_EQ(unstable->mEntries[2]->index(), 7);
+        EXPECT_EQ(unstable->mEntries[2]->term(), 1);
+    }
+
+    // replace the unstable entries
+    {
+        std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
+        addEntry(unstable.get(), 1, 5);
+        unstable->mOffset = 5;
+        unstable->mOffsetInProgress = 5;
+
+        std::vector<LogEntry*> toAppend;
+        toAppend.push_back(makeEntry(5, 2));
+        toAppend.push_back(makeEntry(6, 2));
+
+        unstable->truncateAndAppend(toAppend);
+
+        EXPECT_EQ(unstable->mOffset, 5);
+        EXPECT_EQ(unstable->mOffsetInProgress, 5);
+        EXPECT_EQ(unstable->mEntries.size(), 2);
+        EXPECT_EQ(unstable->mEntries[0]->index(), 5);
+        EXPECT_EQ(unstable->mEntries[0]->term(), 2);
+        EXPECT_EQ(unstable->mEntries[1]->index(), 6);
+        EXPECT_EQ(unstable->mEntries[1]->term(), 2);
+    }
+
+    {
+        std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
+        addEntry(unstable.get(), 1, 5);
+        unstable->mOffset = 5;
+        unstable->mOffsetInProgress = 5;
+
+        std::vector<LogEntry*> toAppend;
+        toAppend.push_back(makeEntry(4, 2));
+        toAppend.push_back(makeEntry(5, 2));
+        toAppend.push_back(makeEntry(6, 2));
+
+        unstable->truncateAndAppend(toAppend);
+
+        EXPECT_EQ(unstable->mOffset, 4);
+        EXPECT_EQ(unstable->mOffsetInProgress, 4);
+        EXPECT_EQ(unstable->mEntries.size(), 3);
+        EXPECT_EQ(unstable->mEntries[0]->index(), 4);
+        EXPECT_EQ(unstable->mEntries[0]->term(), 2);
+        EXPECT_EQ(unstable->mEntries[1]->index(), 5);
+        EXPECT_EQ(unstable->mEntries[1]->term(), 2);
+        EXPECT_EQ(unstable->mEntries[2]->index(), 6);
+        EXPECT_EQ(unstable->mEntries[2]->term(), 2);
+    }
+
+    {
+        std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
+        addEntry(unstable.get(), 1, 5);
+        unstable->mOffset = 5;
+        unstable->mOffsetInProgress = 6;
+
+        std::vector<LogEntry*> toAppend;
+        toAppend.push_back(makeEntry(5, 2));
+        toAppend.push_back(makeEntry(6, 2));
+
+        unstable->truncateAndAppend(toAppend);
+
+        EXPECT_EQ(unstable->mOffset, 5);
+        EXPECT_EQ(unstable->mOffsetInProgress, 5);
+        EXPECT_EQ(unstable->mEntries.size(), 2);
+        EXPECT_EQ(unstable->mEntries[0]->index(), 5);
+        EXPECT_EQ(unstable->mEntries[0]->term(), 2);
+        EXPECT_EQ(unstable->mEntries[1]->index(), 6);
+        EXPECT_EQ(unstable->mEntries[1]->term(), 2);
+    }
+
+    // truncate the existing entries and append
+    {
+        std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
+        addEntry(unstable.get(), 1, 5);
+        addEntry(unstable.get(), 1, 6);
+        addEntry(unstable.get(), 1, 7);
+        unstable->mOffset = 5;
+        unstable->mOffsetInProgress = 5;
+
+        std::vector<LogEntry*> toAppend;
+        toAppend.push_back(makeEntry(6, 2));
+
+        unstable->truncateAndAppend(toAppend);
+
+        EXPECT_EQ(unstable->mOffset, 5);
+        EXPECT_EQ(unstable->mOffsetInProgress, 5);
+        EXPECT_EQ(unstable->mEntries.size(), 2);
+        EXPECT_EQ(unstable->mEntries[0]->index(), 5);
+        EXPECT_EQ(unstable->mEntries[0]->term(), 1);
+        EXPECT_EQ(unstable->mEntries[1]->index(), 6);
+        EXPECT_EQ(unstable->mEntries[1]->term(), 2);
+    }
+
+    {
+        std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
+        addEntry(unstable.get(), 1, 5);
+        addEntry(unstable.get(), 1, 6);
+        addEntry(unstable.get(), 1, 7);
+        unstable->mOffset = 5;
+        unstable->mOffsetInProgress = 5;
+
+        std::vector<LogEntry*> toAppend;
+        toAppend.push_back(makeEntry(7, 2));
+        toAppend.push_back(makeEntry(8, 2));
+
+        unstable->truncateAndAppend(toAppend);
+
+        EXPECT_EQ(unstable->mOffset, 5);
+        EXPECT_EQ(unstable->mOffsetInProgress, 5);
+        EXPECT_EQ(unstable->mEntries.size(), 4);
+        EXPECT_EQ(unstable->mEntries[0]->index(), 5);
+        EXPECT_EQ(unstable->mEntries[0]->term(), 1);
+        EXPECT_EQ(unstable->mEntries[1]->index(), 6);
+        EXPECT_EQ(unstable->mEntries[1]->term(), 1);
+        EXPECT_EQ(unstable->mEntries[2]->index(), 7);
+        EXPECT_EQ(unstable->mEntries[2]->term(), 2);
+        EXPECT_EQ(unstable->mEntries[3]->index(), 8);
+        EXPECT_EQ(unstable->mEntries[3]->term(), 2);
+    }
+
+    {
+        std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
+        addEntry(unstable.get(), 1, 5);
+        addEntry(unstable.get(), 1, 6);
+        addEntry(unstable.get(), 1, 7);
+        unstable->mOffset = 5;
+        unstable->mOffsetInProgress = 6;
+
+        std::vector<LogEntry*> toAppend;
+        toAppend.push_back(makeEntry(6, 2));
+
+        unstable->truncateAndAppend(toAppend);
+
+        EXPECT_EQ(unstable->mOffset, 5);
+        EXPECT_EQ(unstable->mOffsetInProgress, 6);
+        EXPECT_EQ(unstable->mEntries.size(), 2);
+        EXPECT_EQ(unstable->mEntries[0]->index(), 5);
+        EXPECT_EQ(unstable->mEntries[0]->term(), 1);
+        EXPECT_EQ(unstable->mEntries[1]->index(), 6);
+        EXPECT_EQ(unstable->mEntries[1]->term(), 2);
+    }
+
+    {
+        std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
+        addEntry(unstable.get(), 1, 5);
+        addEntry(unstable.get(), 1, 6);
+        addEntry(unstable.get(), 1, 7);
+        unstable->mOffset = 5;
+        unstable->mOffsetInProgress = 7;
+
+        std::vector<LogEntry*> toAppend;
+        toAppend.push_back(makeEntry(6, 2));
+
+        unstable->truncateAndAppend(toAppend);
+
+        EXPECT_EQ(unstable->mOffset, 5);
+        EXPECT_EQ(unstable->mOffsetInProgress, 6);
+        EXPECT_EQ(unstable->mEntries.size(), 2);
+        EXPECT_EQ(unstable->mEntries[0]->index(), 5);
+        EXPECT_EQ(unstable->mEntries[0]->term(), 1);
+        EXPECT_EQ(unstable->mEntries[1]->index(), 6);
+        EXPECT_EQ(unstable->mEntries[1]->term(), 2);
     }
 }
