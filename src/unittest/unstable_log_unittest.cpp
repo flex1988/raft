@@ -121,9 +121,6 @@ TEST_F(UnstableFixture, MaybeLastIndex)
     }
 }
 
-
-
-
 TEST_F(UnstableFixture, MaybeTerm)
 {
     {
@@ -208,7 +205,6 @@ TEST_F(UnstableFixture, MaybeTerm)
         EXPECT_EQ(unstable->maybeTerm(5), 0);
     }
 }
-
 
 TEST_F(UnstableFixture, Restore)
 {

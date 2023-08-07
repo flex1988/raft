@@ -11,7 +11,7 @@ cc_proto_library(
 )
 
 cc_library(
-    name = "libraft_service",
+    name = "libraft",
     srcs = [
             "src/raft_service_impl.cpp",
             "src/kv_service_impl.cpp",
@@ -23,7 +23,8 @@ cc_library(
 	        "src/progress.cpp",
             "src/raft_status.cpp",
             "src/memory_storage.cpp",
-            "src/raft_unstable_log.cpp"
+            "src/raft_unstable_log.cpp",
+            "src/raft_log.cpp"
     ],
     hdrs = [ 
             "src/include/raft_types.h",
@@ -38,7 +39,8 @@ cc_library(
             "src/progress_tracker.h",
 	        "src/progress.h",
             "src/memory_storage.h",
-            "src/raft_unstable_log.h"
+            "src/raft_unstable_log.h",
+            "src/raft_log.h"
     ],
     deps = [ 
 		":libraft_proto",
@@ -55,7 +57,7 @@ cc_binary(
     srcs = [ "src/main.cpp" ],
     deps = [
         ":libraft_proto",
-        ":libraft_service",
+        ":libraft",
     ],
 )
 
@@ -68,11 +70,12 @@ cc_binary(
         "src/unittest/raft_unittest_util.cpp",
         "src/unittest/storage_unittest.cpp",
         "src/unittest/unstable_log_unittest.cpp",
+        "src/unittest/log_unittest.cpp",
         "src/unittest/raft_unittest_util.h"
     ],
 
     deps = [
-        ":libraft_service",
+        ":libraft",
         "@com_google_googletest//:gtest",
     ]
 )
@@ -90,7 +93,7 @@ cc_library(
     ],
     deps = [
         ":libraft_proto",
-        ":libraft_service",
+        ":libraft",
     ],
 )
 
@@ -102,7 +105,7 @@ cc_library(
     hdrs = [ "src/benchmark/benchmark.h" ],
     deps = [
         ":libraft_proto",
-        ":libraft_service",
+        ":libraft",
         ":libkv_client"
     ],
 )

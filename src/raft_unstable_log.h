@@ -74,6 +74,8 @@ private:
     void mustCheckOutOfBounds(uint64_t low, uint64_t high);
 
 private:
+
+    friend class RaftLog;
     // the incoming unstable snapshot, if any.
     raft::Snapshot*                 mSnapshot;
     // all entries that have not yet been written to storage.

@@ -274,6 +274,18 @@ Status RaftImpl::stepCandidate(RaftMessage& msg)
 
 Status RaftImpl::stepLeader(RaftMessage& msg)
 {
+    switch (msg.type)
+    {
+        case MsgProp:
+            if (msg.entries.empty())
+            {
+                assert(0);
+            }
+            if (GetProgress(mId) == NULL)
+            {
+                return ERROR_PROPOSAL_DROPPED;
+            }
+    }
     return RAFT_OK;
 }
 
