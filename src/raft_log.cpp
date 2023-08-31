@@ -61,20 +61,20 @@ uint64_t RaftLog::term(uint64_t i)
     assert(0);
 }
 
-uint64_t RaftLog::findConflict(std::vector<raft::LogEntry*> ents)
+uint64_t RaftLog::findConflict(std::vector<LogEntry*> ents)
 {
     for (uint32_t i = 0; i < ents.size(); i++)
     {
-        raft::LogEntry* entry = ents[i];
-        if (matchTerm(entry->index(), entry->term()) == 0)
+        LogEntry* entry = ents[i];
+        if (matchTerm(entry->index, entry->term) == 0)
         {
-            if (entry->index() <= lastIndex())
+            if (entry->index <= lastIndex())
             {
-                LOG(INFO) << "found conflict at index " << entry->index() << " [existing term: " << zeroTermOnOutOfBounds(term(entry->index()))
-                    << ", conflicting term: " << entry->term() << "]";
+                LOG(INFO) << "found conflict at index " << entry->index << " [existing term: " << zeroTermOnOutOfBounds(term(entry->index))
+                    << ", conflicting term: " << entry->term << "]";
             }
 
-            return entry->index();
+            return entry->index;
         }
     }
     return 0;
@@ -118,22 +118,60 @@ uint64_t RaftLog::zeroTermOnOutOfBounds(uint64_t t)
     return t;
 }
 
+void RaftLog::commitTo(uint64_t tocommit)
+{
+    if (mCommitted < tocommit)
+    {
+        if (lastIndex() < tocommit)
+        {
+            assert(0);
+        }
+        mCommitted = tocommit;
+    }
+}
+
 // maybeAppend returns (0, false) if the entries cannot be appended. Otherwise,
 // it returns (last index of new entries, true).
-uint64_t RaftLog::maybeAppend(uint64_t index, uint64_t term, uint64_t committed, std::vector<raft::LogEntry*> ents)
+uint64_t RaftLog::maybeAppend(uint64_t index, uint64_t term, uint64_t committed, std::vector<LogEntry*> ents)
 {
-    return 0;
+    if (!matchTerm(index, term))
+    {
+        return 0;
+    }
+
+    uint64_t lastnewi = index + ents.size();
+    uint64_t conflict = findConflict(ents);
+    if (conflict == 0 || conflict <= mCommitted)
+    {
+        assert(0);
+    }
+    else
+    {
+        uint64_t offset = index + 1;
+        if (conflict - offset > ents.size())
+        {
+            assert(0);
+        }
+        std::vector<LogEntry*> toappend;
+        toappend.resize(ents.size() - (conflict - offset));
+        toappend.insert(toappend.begin(), ents.begin() + conflict - offset, ents.end());
+        append(toappend);
+    }
+
+    commitTo(std::min(mCommitted, lastnewi));
+
+    return lastnewi;
 }
 
 
-uint64_t RaftLog::append(std::vector<raft::LogEntry*> ents)
+uint64_t RaftLog::append(std::vector<LogEntry*> ents)
 {
     if (ents.empty())
     {
         return lastIndex();
     }
 
-    uint64_t after = ents[0]->index() - 1;
+    uint64_t after = ents[0]->index - 1;
     CHECK_GE(after, mCommitted) << "after is out of range [committed]";
 
     mUnstable->truncateAndAppend(ents);
@@ -177,7 +215,7 @@ uint64_t RaftLog::lastTerm()
 }
 
 
-std::vector<raft::LogEntry*> RaftLog::entries(uint64_t i)
+std::vector<LogEntry*> RaftLog::entries(uint64_t i)
 {
     if (i > lastIndex())
     {
@@ -186,7 +224,7 @@ std::vector<raft::LogEntry*> RaftLog::entries(uint64_t i)
     return {};
 }
 
-std::vector<raft::LogEntry*> slice(uint64_t low, uint64_t high)
+std::vector<LogEntry*> slice(uint64_t low, uint64_t high)
 {
     return {};
 }

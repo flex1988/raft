@@ -13,6 +13,23 @@ namespace raft
 
 const uint64_t NONE_LEADER_ID = 0;
 
+struct LogEntry
+{
+    uint64_t index;
+    uint64_t term;
+    char*    data;
+
+    LogEntry()
+    : index(0), term(0), data(NULL)
+    {
+    }
+
+    LogEntry(uint64_t index, uint64_t term, char* data)
+    : index(index), term(term), data(data)
+    {
+    }
+};
+
 enum RaftMessageType
 {
     MsgNope = 0,
@@ -176,7 +193,7 @@ public:
     //
     // Returns ErrCompacted if entry lo has been compacted, or ErrUnavailable if
     // encountered an unavailable entry in [lo, hi).
-    virtual Status Entries(uint64_t start, uint64_t end, std::vector<raft::LogEntry*>& entries) = 0;
+    virtual Status Entries(uint64_t start, uint64_t end, std::vector<LogEntry*>& entries) = 0;
 
     // Term returns the term of entry i, which must be in the range
     // [FirstIndex()-1, LastIndex()]. The term of the entry before

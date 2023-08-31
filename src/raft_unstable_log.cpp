@@ -30,7 +30,7 @@ uint64_t RaftUnstable::maybeTerm(uint64_t i)
     {
         return 0;
     }
-    return mEntries[i - mOffset]->term();
+    return mEntries[i - mOffset]->term;
 }
 
 uint64_t RaftUnstable::maybeLastIndex()
@@ -55,9 +55,9 @@ uint64_t RaftUnstable::maybeFirstIndex()
     return 0;
 }
 
-std::vector<raft::LogEntry*> RaftUnstable::nextEntries()
+std::vector<LogEntry*> RaftUnstable::nextEntries()
 {
-    std::vector<raft::LogEntry*> entries;
+    std::vector<LogEntry*> entries;
     uint64_t inProgress = mOffsetInProgress - mOffset;
     if (mEntries.size() == inProgress)
     {
@@ -84,7 +84,7 @@ void RaftUnstable::acceptInProgress()
 {
     if (!mEntries.empty())
     {
-        mOffsetInProgress = mEntries.back()->index() + 1;
+        mOffsetInProgress = mEntries.back()->index + 1;
     }
     if (mSnapshot != NULL)
     {
@@ -112,8 +112,8 @@ void RaftUnstable::stableTo(uint64_t i, uint64_t t)
         return;
     }
 
-    int truncate = i + 1 - mOffset;
-    std::vector<raft::LogEntry*> newEntries;
+    uint truncate = i + 1 - mOffset;
+    std::vector<LogEntry*> newEntries;
     for (uint i = 0; i < mEntries.size(); i++)
     {
         if (i < truncate)
@@ -157,9 +157,9 @@ void RaftUnstable::restore(raft::Snapshot* snapshot)
     mSnapshotInProgress = false;
 }
 
-void RaftUnstable::truncateAndAppend(std::vector<raft::LogEntry*> entries)
+void RaftUnstable::truncateAndAppend(std::vector<LogEntry*> entries)
 {
-    uint64_t fromIndex = entries[0]->index();
+    uint64_t fromIndex = entries[0]->index;
     if (fromIndex == mOffset + mEntries.size())
     {
         mEntries.insert(mEntries.end(), entries.begin(), entries.end());
@@ -180,10 +180,10 @@ void RaftUnstable::truncateAndAppend(std::vector<raft::LogEntry*> entries)
 }
 
 
-std::vector<raft::LogEntry*> RaftUnstable::slice(uint64_t low, uint64_t high)
+std::vector<LogEntry*> RaftUnstable::slice(uint64_t low, uint64_t high)
 {
     mustCheckOutOfBounds(low, high);
-    std::vector<raft::LogEntry*> s;
+    std::vector<LogEntry*> s;
     for (uint i = 0; i < mEntries.size(); i++)
     {
         if (i < low - mOffset || i >= high - mOffset)

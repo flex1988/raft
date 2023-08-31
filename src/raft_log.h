@@ -18,9 +18,9 @@ public:
 private:
 	// maybeAppend returns (0, false) if the entries cannot be appended. Otherwise,
 	// it returns (last index of new entries, true).
-	uint64_t maybeAppend(uint64_t index, uint64_t term, uint64_t committed, std::vector<raft::LogEntry*> ents);
+	uint64_t maybeAppend(uint64_t index, uint64_t term, uint64_t committed, std::vector<LogEntry*> ents);
 	
-	uint64_t append(std::vector<raft::LogEntry*> ents);
+	uint64_t append(std::vector<LogEntry*> ents);
 
 	// findConflict finds the index of the conflict.
 	// It returns the first pair of conflicting entries between the existing
@@ -32,7 +32,7 @@ private:
 	// An entry is considered to be conflicting if it has the same index but
 	// a different term.
 	// The index of the given entries MUST be continuously increasing.
-	uint64_t findConflict(std::vector<raft::LogEntry*> ents);
+	uint64_t findConflict(std::vector<LogEntry*> ents);
 
 	// findConflictByTerm returns a best guess on where this log ends matching
 	// another log, given that the only information known about the other log is the
@@ -117,9 +117,9 @@ private:
 
 	uint64_t term(uint64_t i);
 
-	std::vector<raft::LogEntry*> entries(uint64_t i);
+	std::vector<LogEntry*> entries(uint64_t i);
 
-	std::vector<raft::LogEntry*> allEntries();
+	std::vector<LogEntry*> allEntries();
 
 	// isUpToDate determines if the given (lastIndex,term) log is more up-to-date
 	// by comparing the index and term of the last entries in the existing logs.
@@ -148,7 +148,7 @@ private:
 	void scan();
 
 	// slice returns a slice of log entries from lo through hi-1, inclusive.
-	std::vector<raft::LogEntry*> slice(uint64_t low, uint64_t high);
+	std::vector<LogEntry*> slice(uint64_t low, uint64_t high);
 
 	// l.firstIndex <= lo <= hi <= l.firstIndex + len(l.entries)
 	void mustCheckOutOfBounds();

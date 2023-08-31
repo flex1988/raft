@@ -14,7 +14,7 @@ public:
 
     void InitialState();
 
-    Status Entries(uint64_t start, uint64_t end, std::vector<raft::LogEntry*>& entries);
+    Status Entries(uint64_t start, uint64_t end, std::vector<LogEntry*>& entries);
 
     uint64_t Term(uint64_t i);
 
@@ -22,7 +22,7 @@ public:
 
     uint64_t FirstIndex();
 
-    uint64_t firstIndex() { return (*mEntries.begin())->index() + 1; }
+    uint64_t firstIndex() { return (*mEntries.begin())->index + 1; }
 
     void Snapshot() { }
 
@@ -32,11 +32,11 @@ public:
 
     Status Compact(uint64_t compactIndex);
 
-    void Append(const std::vector<raft::LogEntry*>& entries);
+    void Append(const std::vector<LogEntry*>& entries);
 
 private:
-    std::vector<raft::LogEntry*> mEntries;
-    raft::Snapshot               mSnapshot;
+    std::vector<LogEntry*>          mEntries;
+    raft::Snapshot                  mSnapshot;
 };
 }
 

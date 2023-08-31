@@ -1,7 +1,7 @@
 #ifndef __RAFT_UNSTABLE_LOG_H__
 #define __RAFT_UNSTABLE_LOG_H__
 
-#include "src/proto/raft.pb.h"
+#include "raft.h"
 
 namespace raft
 {
@@ -28,7 +28,7 @@ private:
 
     // nextEntries returns the unstable entries that are not already in the process
     // of being written to storage.
-    std::vector<raft::LogEntry*> nextEntries();
+    std::vector<LogEntry*> nextEntries();
 
     // nextSnapshot returns the unstable snapshot, if one exists that is not already
     // in the process of being written to storage.
@@ -59,7 +59,7 @@ private:
 
     void restore(raft::Snapshot* snapshot);
 
-    void truncateAndAppend(std::vector<raft::LogEntry*> entries);
+    void truncateAndAppend(std::vector<LogEntry*> entries);
 
     // slice returns the entries from the unstable log with indexes in the range
     // [lo, hi). The entire range must be stored in the unstable log or the method
@@ -69,7 +69,7 @@ private:
     // TODO(pavelkalinnikov): this, and similar []pb.Entry slices, may bubble up all
     // the way to the application code through Ready struct. Protect other slices
     // similarly, and document how the client can use them.
-    std::vector<raft::LogEntry*> slice(uint64_t low, uint64_t high);
+    std::vector<LogEntry*> slice(uint64_t low, uint64_t high);
 
     void mustCheckOutOfBounds(uint64_t low, uint64_t high);
 
@@ -79,7 +79,7 @@ private:
     // the incoming unstable snapshot, if any.
     raft::Snapshot*                 mSnapshot;
     // all entries that have not yet been written to storage.
-    std::vector<raft::LogEntry*>    mEntries;
+    std::vector<LogEntry*>    mEntries;
     // entries[i] has raft log position i+offset.
     uint64_t                        mOffset;
     // if true, snapshot is being written to storage.

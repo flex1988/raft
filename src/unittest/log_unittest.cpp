@@ -20,17 +20,13 @@ protected:
 
     void addEntry(RaftUnstable* unstable, uint64_t term, uint64_t index)
     {
-        raft::LogEntry* log = new raft::LogEntry;
-        log->set_index(index);
-        log->set_term(term);
+        raft::LogEntry* log = new LogEntry { index, term, NULL };
         unstable->mEntries.push_back(log);
     }
 
     raft::LogEntry* makeEntry(uint64_t index, uint64_t term)
     {
-        raft::LogEntry* log = new raft::LogEntry;
-        log->set_index(index);
-        log->set_term(term);
+        raft::LogEntry* log = new raft::LogEntry {index, term, NULL};
         return log;
     }
 

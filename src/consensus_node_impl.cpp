@@ -49,7 +49,7 @@ void ConsensusNodeImpl::becomeCandidate()
         request.set_term(mCurrentTerm);
         request.mutable_candidate_id()->set_ip(mOwnId.ip());
         request.mutable_candidate_id()->set_port(mOwnId.port());
-        raft::LogEntry lastLog;
+        raft::LogEntryPB lastLog;
         if (!mLogs.empty())
         {
             lastLog = mLogs.back();
@@ -251,7 +251,7 @@ void ConsensusNodeImpl::LeaderSendHeartBeats()
         brpc::Controller* ctrl = new brpc::Controller;
         raft::RaftService_Stub stub(&mChannels[i]);
         raft::AppendEntriesRequest request;
-        raft::LogEntry lastLog;
+        raft::LogEntryPB lastLog;
         if (!mLogs.empty())
         {
             lastLog = mLogs.back();
@@ -281,7 +281,7 @@ void ConsensusNodeImpl::Submit(const Command& cmd, RaftStatusClosureA1<KVService
         run_closure_in_bthread(done, BTHREAD_ATTR_NORMAL);
         return;
     }
-    raft::LogEntry entry;
+    raft::LogEntryPB entry;
     entry.set_index(mLogs.size());
     entry.set_term(mCurrentTerm);
     std::string val;
@@ -326,7 +326,7 @@ void ConsensusNodeImpl::leaderReplicateLog()
             }
             else
             {
-                raft::LogEntry& prev = mLogs[mNextIndex[i]];
+                raft::LogEntryPB& prev = mLogs[mNextIndex[i]];
                 request.set_prev_log_index(prev.index());
                 request.set_prev_log_term(prev.term());
             }
@@ -334,7 +334,7 @@ void ConsensusNodeImpl::leaderReplicateLog()
             request.set_leader_commit(mCommitIndex);
             for (uint64_t j = mNextIndex[i]; j < mLatestLogIndex; j++)
             {
-                raft::LogEntry* entry = request.add_entries();
+                raft::LogEntryPB* entry = request.add_entries();
                 entry->set_index(j);
                 entry->set_term(mLogs[j].term());
                 entry->set_data(mLogs[j].data());

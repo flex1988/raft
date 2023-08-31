@@ -26,16 +26,16 @@ protected:
     void addEntry(RaftUnstable* unstable, uint64_t term, uint64_t index)
     {
         raft::LogEntry* log = new raft::LogEntry;
-        log->set_index(index);
-        log->set_term(term);
+        log->index = index;
+        log->term = term;
         unstable->mEntries.push_back(log);
     }
 
     raft::LogEntry* makeEntry(uint64_t index, uint64_t term)
     {
         raft::LogEntry* log = new raft::LogEntry;
-        log->set_index(index);
-        log->set_term(term);
+        log->index = index;
+        log->term = term;
         return log;
     }
 
@@ -240,10 +240,10 @@ TEST_F(UnstableFixture, NextEntries)
 
         std::vector<raft::LogEntry*> entries = unstable->nextEntries();
         EXPECT_EQ(entries.size(), 2);
-        EXPECT_EQ(entries[0]->index(), 5);
-        EXPECT_EQ(entries[0]->term(), 1);
-        EXPECT_EQ(entries[1]->index(), 6);
-        EXPECT_EQ(entries[1]->term(), 1);
+        EXPECT_EQ(entries[0]->index, 5);
+        EXPECT_EQ(entries[0]->term, 1);
+        EXPECT_EQ(entries[1]->index, 6);
+        EXPECT_EQ(entries[1]->term, 1);
     }
 
     {
@@ -255,8 +255,8 @@ TEST_F(UnstableFixture, NextEntries)
 
         std::vector<raft::LogEntry*> entries = unstable->nextEntries();
         EXPECT_EQ(entries.size(), 1);
-        EXPECT_EQ(entries[0]->index(), 6);
-        EXPECT_EQ(entries[0]->term(), 1);
+        EXPECT_EQ(entries[0]->index, 6);
+        EXPECT_EQ(entries[0]->term, 1);
     }
 
     {
@@ -660,12 +660,12 @@ TEST_F(UnstableFixture, TruncateAndAppend)
         EXPECT_EQ(unstable->mOffset, 5);
         EXPECT_EQ(unstable->mOffsetInProgress, 5);
         EXPECT_EQ(unstable->mEntries.size(), 3);
-        EXPECT_EQ(unstable->mEntries[0]->index(), 5);
-        EXPECT_EQ(unstable->mEntries[0]->term(), 1);
-        EXPECT_EQ(unstable->mEntries[1]->index(), 6);
-        EXPECT_EQ(unstable->mEntries[1]->term(), 1);
-        EXPECT_EQ(unstable->mEntries[2]->index(), 7);
-        EXPECT_EQ(unstable->mEntries[2]->term(), 1);
+        EXPECT_EQ(unstable->mEntries[0]->index, 5);
+        EXPECT_EQ(unstable->mEntries[0]->term, 1);
+        EXPECT_EQ(unstable->mEntries[1]->index, 6);
+        EXPECT_EQ(unstable->mEntries[1]->term, 1);
+        EXPECT_EQ(unstable->mEntries[2]->index, 7);
+        EXPECT_EQ(unstable->mEntries[2]->term, 1);
     }
 
     {
@@ -683,12 +683,12 @@ TEST_F(UnstableFixture, TruncateAndAppend)
         EXPECT_EQ(unstable->mOffset, 5);
         EXPECT_EQ(unstable->mOffsetInProgress, 6);
         EXPECT_EQ(unstable->mEntries.size(), 3);
-        EXPECT_EQ(unstable->mEntries[0]->index(), 5);
-        EXPECT_EQ(unstable->mEntries[0]->term(), 1);
-        EXPECT_EQ(unstable->mEntries[1]->index(), 6);
-        EXPECT_EQ(unstable->mEntries[1]->term(), 1);
-        EXPECT_EQ(unstable->mEntries[2]->index(), 7);
-        EXPECT_EQ(unstable->mEntries[2]->term(), 1);
+        EXPECT_EQ(unstable->mEntries[0]->index, 5);
+        EXPECT_EQ(unstable->mEntries[0]->term, 1);
+        EXPECT_EQ(unstable->mEntries[1]->index, 6);
+        EXPECT_EQ(unstable->mEntries[1]->term, 1);
+        EXPECT_EQ(unstable->mEntries[2]->index, 7);
+        EXPECT_EQ(unstable->mEntries[2]->term, 1);
     }
 
     // replace the unstable entries
@@ -707,10 +707,10 @@ TEST_F(UnstableFixture, TruncateAndAppend)
         EXPECT_EQ(unstable->mOffset, 5);
         EXPECT_EQ(unstable->mOffsetInProgress, 5);
         EXPECT_EQ(unstable->mEntries.size(), 2);
-        EXPECT_EQ(unstable->mEntries[0]->index(), 5);
-        EXPECT_EQ(unstable->mEntries[0]->term(), 2);
-        EXPECT_EQ(unstable->mEntries[1]->index(), 6);
-        EXPECT_EQ(unstable->mEntries[1]->term(), 2);
+        EXPECT_EQ(unstable->mEntries[0]->index, 5);
+        EXPECT_EQ(unstable->mEntries[0]->term, 2);
+        EXPECT_EQ(unstable->mEntries[1]->index, 6);
+        EXPECT_EQ(unstable->mEntries[1]->term, 2);
     }
 
     {
@@ -729,12 +729,12 @@ TEST_F(UnstableFixture, TruncateAndAppend)
         EXPECT_EQ(unstable->mOffset, 4);
         EXPECT_EQ(unstable->mOffsetInProgress, 4);
         EXPECT_EQ(unstable->mEntries.size(), 3);
-        EXPECT_EQ(unstable->mEntries[0]->index(), 4);
-        EXPECT_EQ(unstable->mEntries[0]->term(), 2);
-        EXPECT_EQ(unstable->mEntries[1]->index(), 5);
-        EXPECT_EQ(unstable->mEntries[1]->term(), 2);
-        EXPECT_EQ(unstable->mEntries[2]->index(), 6);
-        EXPECT_EQ(unstable->mEntries[2]->term(), 2);
+        EXPECT_EQ(unstable->mEntries[0]->index, 4);
+        EXPECT_EQ(unstable->mEntries[0]->term, 2);
+        EXPECT_EQ(unstable->mEntries[1]->index, 5);
+        EXPECT_EQ(unstable->mEntries[1]->term, 2);
+        EXPECT_EQ(unstable->mEntries[2]->index, 6);
+        EXPECT_EQ(unstable->mEntries[2]->term, 2);
     }
 
     {
@@ -752,10 +752,10 @@ TEST_F(UnstableFixture, TruncateAndAppend)
         EXPECT_EQ(unstable->mOffset, 5);
         EXPECT_EQ(unstable->mOffsetInProgress, 5);
         EXPECT_EQ(unstable->mEntries.size(), 2);
-        EXPECT_EQ(unstable->mEntries[0]->index(), 5);
-        EXPECT_EQ(unstable->mEntries[0]->term(), 2);
-        EXPECT_EQ(unstable->mEntries[1]->index(), 6);
-        EXPECT_EQ(unstable->mEntries[1]->term(), 2);
+        EXPECT_EQ(unstable->mEntries[0]->index, 5);
+        EXPECT_EQ(unstable->mEntries[0]->term, 2);
+        EXPECT_EQ(unstable->mEntries[1]->index, 6);
+        EXPECT_EQ(unstable->mEntries[1]->term, 2);
     }
 
     // truncate the existing entries and append
@@ -775,10 +775,10 @@ TEST_F(UnstableFixture, TruncateAndAppend)
         EXPECT_EQ(unstable->mOffset, 5);
         EXPECT_EQ(unstable->mOffsetInProgress, 5);
         EXPECT_EQ(unstable->mEntries.size(), 2);
-        EXPECT_EQ(unstable->mEntries[0]->index(), 5);
-        EXPECT_EQ(unstable->mEntries[0]->term(), 1);
-        EXPECT_EQ(unstable->mEntries[1]->index(), 6);
-        EXPECT_EQ(unstable->mEntries[1]->term(), 2);
+        EXPECT_EQ(unstable->mEntries[0]->index, 5);
+        EXPECT_EQ(unstable->mEntries[0]->term, 1);
+        EXPECT_EQ(unstable->mEntries[1]->index, 6);
+        EXPECT_EQ(unstable->mEntries[1]->term, 2);
     }
 
     {
@@ -798,14 +798,14 @@ TEST_F(UnstableFixture, TruncateAndAppend)
         EXPECT_EQ(unstable->mOffset, 5);
         EXPECT_EQ(unstable->mOffsetInProgress, 5);
         EXPECT_EQ(unstable->mEntries.size(), 4);
-        EXPECT_EQ(unstable->mEntries[0]->index(), 5);
-        EXPECT_EQ(unstable->mEntries[0]->term(), 1);
-        EXPECT_EQ(unstable->mEntries[1]->index(), 6);
-        EXPECT_EQ(unstable->mEntries[1]->term(), 1);
-        EXPECT_EQ(unstable->mEntries[2]->index(), 7);
-        EXPECT_EQ(unstable->mEntries[2]->term(), 2);
-        EXPECT_EQ(unstable->mEntries[3]->index(), 8);
-        EXPECT_EQ(unstable->mEntries[3]->term(), 2);
+        EXPECT_EQ(unstable->mEntries[0]->index, 5);
+        EXPECT_EQ(unstable->mEntries[0]->term, 1);
+        EXPECT_EQ(unstable->mEntries[1]->index, 6);
+        EXPECT_EQ(unstable->mEntries[1]->term, 1);
+        EXPECT_EQ(unstable->mEntries[2]->index, 7);
+        EXPECT_EQ(unstable->mEntries[2]->term, 2);
+        EXPECT_EQ(unstable->mEntries[3]->index, 8);
+        EXPECT_EQ(unstable->mEntries[3]->term, 2);
     }
 
     {
@@ -824,10 +824,10 @@ TEST_F(UnstableFixture, TruncateAndAppend)
         EXPECT_EQ(unstable->mOffset, 5);
         EXPECT_EQ(unstable->mOffsetInProgress, 6);
         EXPECT_EQ(unstable->mEntries.size(), 2);
-        EXPECT_EQ(unstable->mEntries[0]->index(), 5);
-        EXPECT_EQ(unstable->mEntries[0]->term(), 1);
-        EXPECT_EQ(unstable->mEntries[1]->index(), 6);
-        EXPECT_EQ(unstable->mEntries[1]->term(), 2);
+        EXPECT_EQ(unstable->mEntries[0]->index, 5);
+        EXPECT_EQ(unstable->mEntries[0]->term, 1);
+        EXPECT_EQ(unstable->mEntries[1]->index, 6);
+        EXPECT_EQ(unstable->mEntries[1]->term, 2);
     }
 
     {
@@ -846,9 +846,9 @@ TEST_F(UnstableFixture, TruncateAndAppend)
         EXPECT_EQ(unstable->mOffset, 5);
         EXPECT_EQ(unstable->mOffsetInProgress, 6);
         EXPECT_EQ(unstable->mEntries.size(), 2);
-        EXPECT_EQ(unstable->mEntries[0]->index(), 5);
-        EXPECT_EQ(unstable->mEntries[0]->term(), 1);
-        EXPECT_EQ(unstable->mEntries[1]->index(), 6);
-        EXPECT_EQ(unstable->mEntries[1]->term(), 2);
+        EXPECT_EQ(unstable->mEntries[0]->index, 5);
+        EXPECT_EQ(unstable->mEntries[0]->term, 1);
+        EXPECT_EQ(unstable->mEntries[1]->index, 6);
+        EXPECT_EQ(unstable->mEntries[1]->term, 2);
     }
 }

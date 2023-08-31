@@ -12,11 +12,11 @@ public:
     raft::LogEntry* allocEntry(uint64_t index, uint64_t term, char* data)
     {
         raft::LogEntry* log = new raft::LogEntry;
-        log->set_index(index);
-        log->set_term(term);
+        log->index = index;
+        log->term = term;
         if (data)
         {
-            log->set_data(data);
+            log->data = data;
         }
         return log;
     }
@@ -38,7 +38,7 @@ public:
         std::vector<raft::LogEntry*> entries;
         for (int i = 0; i < length; i+=2)
         {
-            entries.push_back(allocEntry(logs[i], logs[i+1], NULL));
+            entries.push_back(new LogEntry(logs[i], logs[i+1], NULL));
         }
 
         std::unique_ptr<MemoryStorage> mem = std::move(allocMemoryStorage(entries));    
@@ -84,8 +84,8 @@ public:
         EXPECT_EQ(fetch.size(), t->count);
         for (int i = 0; i < t->count; i++)
         {
-            EXPECT_EQ(fetch[i]->index(), t->result[i*2]);
-            EXPECT_EQ(fetch[i]->term(), t->result[i*2 + 1]);
+            EXPECT_EQ(fetch[i]->index, t->result[i*2]);
+            EXPECT_EQ(fetch[i]->term, t->result[i*2 + 1]);
         }
     }
 
@@ -119,8 +119,8 @@ public:
         EXPECT_EQ(mem->mEntries.size(), t->count);
         for (uint32_t i = 0; i < mem->mEntries.size(); i++)
         {
-            EXPECT_EQ(mem->mEntries[i]->index(), t->result[2*i]);
-            EXPECT_EQ(mem->mEntries[i]->term(), t->result[2*i+1]);
+            EXPECT_EQ(mem->mEntries[i]->index, t->result[2*i]);
+            EXPECT_EQ(mem->mEntries[i]->term, t->result[2*i+1]);
         }
     }
 
@@ -231,8 +231,8 @@ TEST_F(StorageFixture, Compact)
         std::unique_ptr<MemoryStorage> mem = std::move(prepareEntries(logs, 6));  
         Status s = mem->Compact(2);
         EXPECT_EQ(s.Code(), ERROR_MEMSTOR_COMPACTED.Code());
-        EXPECT_EQ(mem->mEntries[0]->index(), 3);
-        EXPECT_EQ(mem->mEntries[0]->term(), 3);
+        EXPECT_EQ(mem->mEntries[0]->index, 3);
+        EXPECT_EQ(mem->mEntries[0]->term, 3);
         EXPECT_EQ(mem->mEntries.size(), 3);
     }
 
@@ -241,8 +241,8 @@ TEST_F(StorageFixture, Compact)
         std::unique_ptr<MemoryStorage> mem = std::move(prepareEntries(logs, 6));  
         Status s = mem->Compact(3);
         EXPECT_EQ(s.Code(), ERROR_MEMSTOR_COMPACTED.Code());
-        EXPECT_EQ(mem->mEntries[0]->index(), 3);
-        EXPECT_EQ(mem->mEntries[0]->term(), 3);
+        EXPECT_EQ(mem->mEntries[0]->index, 3);
+        EXPECT_EQ(mem->mEntries[0]->term, 3);
         EXPECT_EQ(mem->mEntries.size(), 3);
     }
 
@@ -251,8 +251,8 @@ TEST_F(StorageFixture, Compact)
         std::unique_ptr<MemoryStorage> mem = std::move(prepareEntries(logs, 6));  
         Status s = mem->Compact(4);
         EXPECT_TRUE(s.IsOK());
-        EXPECT_EQ(mem->mEntries[0]->index(), 4);
-        EXPECT_EQ(mem->mEntries[0]->term(), 4);
+        EXPECT_EQ(mem->mEntries[0]->index, 4);
+        EXPECT_EQ(mem->mEntries[0]->term, 4);
         EXPECT_EQ(mem->mEntries.size(), 2);
     }
 
@@ -261,8 +261,8 @@ TEST_F(StorageFixture, Compact)
         std::unique_ptr<MemoryStorage> mem = std::move(prepareEntries(logs, 6));  
         Status s = mem->Compact(5);
         EXPECT_TRUE(s.IsOK());
-        EXPECT_EQ(mem->mEntries[0]->index(), 5);
-        EXPECT_EQ(mem->mEntries[0]->term(), 5);
+        EXPECT_EQ(mem->mEntries[0]->index, 5);
+        EXPECT_EQ(mem->mEntries[0]->term, 5);
         EXPECT_EQ(mem->mEntries.size(), 1);
     }
 }

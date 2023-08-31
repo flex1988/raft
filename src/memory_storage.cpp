@@ -8,9 +8,7 @@ namespace raft
 
 MemoryStorage::MemoryStorage()
 {
-    raft::LogEntry* log = new raft::LogEntry;
-    log->set_index(0);
-    log->set_term(0);
+    LogEntry* log = new LogEntry;
     mEntries.push_back(log);
 }
 
@@ -19,10 +17,10 @@ void MemoryStorage::InitialState()
 
 }
 
-Status MemoryStorage::Entries(uint64_t low, uint64_t high, std::vector<raft::LogEntry*>& entries)
+Status MemoryStorage::Entries(uint64_t low, uint64_t high, std::vector<LogEntry*>& entries)
 {
 
-    uint64_t offset = mEntries[0]->index();
+    uint64_t offset = mEntries[0]->index;
     if (low <= offset)
     {
         return ERROR_MEMSTOR_COMPACTED;
@@ -42,14 +40,14 @@ Status MemoryStorage::Entries(uint64_t low, uint64_t high, std::vector<raft::Log
     return RAFT_OK;
 }
 
-void MemoryStorage::Append(const std::vector<raft::LogEntry*>& entries)
+void MemoryStorage::Append(const std::vector<LogEntry*>& entries)
 {
     if (entries.empty())
     {
         return;
     }
     uint64_t first = firstIndex();
-    uint64_t last = entries[0]->index() + entries.size() - 1;
+    uint64_t last = entries[0]->index + entries.size() - 1;
     // no new entry
     if (last < first)
     {
@@ -57,13 +55,13 @@ void MemoryStorage::Append(const std::vector<raft::LogEntry*>& entries)
     }
 
     int start = 0;
-    std::vector<raft::LogEntry*> truncate;
-    if (first > entries[0]->index())
+    std::vector<LogEntry*> truncate;
+    if (first > entries[0]->index)
     {
-        start = first - entries[0]->index();
+        start = first - entries[0]->index;
     }
 
-    uint64_t offset = entries[start]->index() - mEntries[0]->index();
+    uint64_t offset = entries[start]->index - mEntries[0]->index;
     if (mEntries.size() > offset)
     {
         mEntries.resize(offset + entries.size() - start);
@@ -81,7 +79,7 @@ void MemoryStorage::Append(const std::vector<raft::LogEntry*>& entries)
 
 uint64_t MemoryStorage::Term(uint64_t i)
 {
-    uint64_t offset = mEntries[0]->index();
+    uint64_t offset = mEntries[0]->index;
     if (i < offset)
     {
         return 0;
@@ -90,7 +88,7 @@ uint64_t MemoryStorage::Term(uint64_t i)
     {
         return 0;
     }
-    return mEntries[i - offset]->term();
+    return mEntries[i - offset]->term;
 }
 
 uint64_t MemoryStorage::FirstIndex()
@@ -100,7 +98,7 @@ uint64_t MemoryStorage::FirstIndex()
 
 uint64_t MemoryStorage::LastIndex()
 {
-    return mEntries[0]->index() + mEntries.size() - 1;
+    return mEntries[0]->index + mEntries.size() - 1;
 }
 
 Status MemoryStorage::CreateSnapshot(uint64_t i, raft::ConfState* cs, std::string* data, raft::Snapshot* snapshot)
@@ -110,11 +108,11 @@ Status MemoryStorage::CreateSnapshot(uint64_t i, raft::ConfState* cs, std::strin
         return ERROR_MEMSTOR_SNAP_OUTOFDATE;
     }
 
-    uint64_t offset = mEntries[0]->index();
+    uint64_t offset = mEntries[0]->index;
     CHECK_LE(i, LastIndex()) << "snapshot is out of bound lastindex";
 
     mSnapshot.mutable_meta()->set_index(i);
-    mSnapshot.mutable_meta()->set_term(mEntries[i - offset]->term());
+    mSnapshot.mutable_meta()->set_term(mEntries[i - offset]->term);
     if (cs != NULL)
     {
         mSnapshot.mutable_meta()->set_allocated_confstate(cs);
@@ -138,16 +136,16 @@ Status MemoryStorage::ApplySnapshot(const raft::Snapshot& snapshot)
         delete mEntries[i];
     }
     mEntries.clear();
-    raft::LogEntry* log = new raft::LogEntry;
-    log->set_term(snapshot.meta().term());
-    log->set_index(snapshot.meta().index());
+    LogEntry* log = new LogEntry;
+    log->term = snapshot.meta().term();
+    log->index = snapshot.meta().index();
     mEntries.push_back(log);
     return RAFT_OK;
 }
 
 Status MemoryStorage::Compact(uint64_t compactIndex)
 {
-    uint64_t offset = mEntries[0]->index();
+    uint64_t offset = mEntries[0]->index;
     if (compactIndex <= offset)
     {
         return ERROR_MEMSTOR_COMPACTED;
@@ -155,10 +153,10 @@ Status MemoryStorage::Compact(uint64_t compactIndex)
 
     CHECK_LE(compactIndex, LastIndex()) << "compact is out of bound lastIndex";
     uint64_t i = compactIndex - offset;
-    raft::LogEntry* log = new raft::LogEntry;
-    log->set_index(mEntries[i]->index());
-    log->set_term(mEntries[i]->term());
-    std::vector<raft::LogEntry*> newEntries;
+    LogEntry* log = new LogEntry;
+    log->index = mEntries[i]->index;
+    log->term = mEntries[i]->term;
+    std::vector<LogEntry*> newEntries;
     newEntries.push_back(log);
     for (int j = 0; j < i; j++)
     {

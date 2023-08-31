@@ -86,7 +86,7 @@ public:
 
     std::string GetRoleStr();
 
-    raft::LogEntry* GetLastLogEntry()
+    raft::LogEntryPB* GetLastLogEntry()
     {
         if (mLogs.empty())
         {
@@ -151,7 +151,7 @@ private:
 private:
     uint64_t                            mCurrentTerm;   
     raft::ServerId                      mVotedFor;
-    std::vector<raft::LogEntry>         mLogs;   
+    std::vector<raft::LogEntryPB>         mLogs;   
     uint64_t                            mLatestLogIndex;
     // Volatile state on all servers:
     // index of highest log entry known to be committed (initialized to 0, increases monotonically)
