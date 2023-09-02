@@ -69,7 +69,7 @@ static bool reject_stale_term_called = false;
 Status stepFake(RaftMessage& msg)
 {
     reject_stale_term_called = true;
-    return RAFT_OK;
+    return OK;
 }
 
 // TestRejectStaleTermMessage tests that if a server receives a request with

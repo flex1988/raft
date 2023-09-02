@@ -153,7 +153,51 @@ protected:
         EXPECT_EQ(t->wunstable, log->mUnstable->mOffset);
     }
 
-protected:
+    struct MaybeAppendTestCase
+    {
+        uint64_t logTerm;
+        uint64_t index;
+        uint64_t committed;
+        std::vector<LogEntry> ents;
+
+        uint64_t wlasti;
+        bool     wappend;
+        uint64_t wcommit;
+        bool     wpanic;
+    };
+
+    void runMaybeAppend(MaybeAppendTestCase* t)
+    {
+        std::vector<LogEntry*> prevEnts;
+        prevEnts.push_back(new LogEntry(1, 1));
+        prevEnts.push_back(new LogEntry(2, 2));
+        prevEnts.push_back(new LogEntry(3, 3));
+        uint64_t commit = 1;
+
+        std::unique_ptr<MemoryStorage> stor = std::make_unique<MemoryStorage>();
+        stor->Append(prevEnts);
+        std::unique_ptr<RaftLog> log = std::make_unique<RaftLog>(stor.release(), 4096);
+        log->mCommitted = commit;
+        std::vector<LogEntry*> append;
+        for (uint i = 0; i < t->ents.size(); i++)
+        {
+            append.push_back(&t->ents[i]);
+        }
+
+        uint64_t glasti = log->maybeAppend(t->index, t->logTerm, t->committed, append);
+        EXPECT_EQ(t->wlasti, glasti);
+        EXPECT_EQ(t->wappend, glasti > 0);
+        EXPECT_EQ(t->wcommit, log->mCommitted);
+        EXPECT_EQ(t->wcommit, log->mCommitted);
+        if (glasti > 0 && !t->ents.empty())
+        {
+            std::vector<LogEntry*> gents;
+            Status s = log->slice(log->lastIndex() - t->ents.size() + 1, log->lastIndex() + 1, gents);
+            EXPECT_TRUE(s.IsOK());
+            EXPECT_EQ(gents.size(), t->ents.size());
+        }
+    }
+
 };
 
 TEST_F(LogFixture, FindConflict)
@@ -251,5 +295,21 @@ TEST_F(LogFixture, Append)
     for (uint32_t i = 0; i < cases.size(); i++)
     {
         runAppend(&cases[i]);
+    }
+}
+
+TEST_F(LogFixture, LogMaybeAppend)
+{
+    uint64_t lastindex = 3;
+    uint64_t lastterm = 3;
+    uint64_t commit = 1;
+
+    std::vector<MaybeAppendTestCase> cases = {
+        { lastterm - 1, lastindex, lastindex, { {lastindex + 1, 4} }, 0, false, commit, false }
+    };
+
+    for (uint i = 0; i < cases.size(); i++)
+    {
+        runMaybeAppend(&cases[i]);
     }
 }

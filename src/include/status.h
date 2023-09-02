@@ -32,11 +32,11 @@ private:
     std::string msg;
 };
 
-extern Status RAFT_OK;
-extern Status RAFT_ERROR;
+extern Status OK;
+extern Status ERROR;
 extern Status ERROR_PROPOSAL_DROPPED;
-extern Status ERROR_MEMSTOR_COMPACTED;
-extern Status ERROR_MEMSTOR_UNAVAILABLE;
-extern Status ERROR_MEMSTOR_SNAP_OUTOFDATE;
+extern Status ERROR_COMPACTED;
+extern Status ERROR_UNAVAILABLE;
+extern Status ERROR_SNAP_OUTOFDATE;
 
 }

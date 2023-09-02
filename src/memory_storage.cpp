@@ -23,7 +23,7 @@ Status MemoryStorage::Entries(uint64_t low, uint64_t high, std::vector<LogEntry*
     uint64_t offset = mEntries[0]->index;
     if (low <= offset)
     {
-        return ERROR_MEMSTOR_COMPACTED;
+        return ERROR_COMPACTED;
     }
     if (high > LastIndex() + 1)
     {
@@ -32,12 +32,12 @@ Status MemoryStorage::Entries(uint64_t low, uint64_t high, std::vector<LogEntry*
     // only contains dummy entries
     if (mEntries.size() == 1)
     {
-        return ERROR_MEMSTOR_UNAVAILABLE;
+        return ERROR_UNAVAILABLE;
     }
 
     entries.reserve(high - low + 1);
     entries.insert(entries.begin(), mEntries.begin() + (low - offset), mEntries.begin() + (high - offset));
-    return RAFT_OK;
+    return OK;
 }
 
 void MemoryStorage::Append(const std::vector<LogEntry*>& entries)
@@ -105,7 +105,7 @@ Status MemoryStorage::CreateSnapshot(uint64_t i, raft::ConfState* cs, std::strin
 {
     if (i <= mSnapshot.meta().index())
     {
-        return ERROR_MEMSTOR_SNAP_OUTOFDATE;
+        return ERROR_SNAP_OUTOFDATE;
     }
 
     uint64_t offset = mEntries[0]->index;
@@ -119,7 +119,7 @@ Status MemoryStorage::CreateSnapshot(uint64_t i, raft::ConfState* cs, std::strin
     }
     mSnapshot.set_allocated_data(data);
     snapshot->CopyFrom(mSnapshot);
-    return RAFT_OK;
+    return OK;
 }
 
 Status MemoryStorage::ApplySnapshot(const raft::Snapshot& snapshot)
@@ -128,7 +128,7 @@ Status MemoryStorage::ApplySnapshot(const raft::Snapshot& snapshot)
     uint64_t snapshotIndex = snapshot.meta().index();
     if (currentSnapshotIndex >= snapshotIndex)
     {
-        return ERROR_MEMSTOR_SNAP_OUTOFDATE;
+        return ERROR_SNAP_OUTOFDATE;
     }
     mSnapshot.CopyFrom(snapshot);
     for (int i = 0; i < mEntries.size(); i++)
@@ -140,7 +140,7 @@ Status MemoryStorage::ApplySnapshot(const raft::Snapshot& snapshot)
     log->term = snapshot.meta().term();
     log->index = snapshot.meta().index();
     mEntries.push_back(log);
-    return RAFT_OK;
+    return OK;
 }
 
 Status MemoryStorage::Compact(uint64_t compactIndex)
@@ -148,7 +148,7 @@ Status MemoryStorage::Compact(uint64_t compactIndex)
     uint64_t offset = mEntries[0]->index;
     if (compactIndex <= offset)
     {
-        return ERROR_MEMSTOR_COMPACTED;
+        return ERROR_COMPACTED;
     }
 
     CHECK_LE(compactIndex, LastIndex()) << "compact is out of bound lastIndex";
@@ -168,7 +168,7 @@ Status MemoryStorage::Compact(uint64_t compactIndex)
         newEntries.push_back(mEntries[i]);
     }
     mEntries = newEntries;
-    return RAFT_OK;
+    return OK;
 }
 
 

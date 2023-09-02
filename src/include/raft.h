@@ -28,6 +28,11 @@ struct LogEntry
     : index(index), term(term), data(data)
     {
     }
+
+    LogEntry(uint64_t index, uint64_t term)
+    : index(index), term(term), data(NULL)
+    {
+    }
 };
 
 enum RaftMessageType

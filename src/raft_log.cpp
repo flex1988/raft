@@ -224,9 +224,57 @@ std::vector<LogEntry*> RaftLog::entries(uint64_t i)
     return {};
 }
 
-std::vector<LogEntry*> slice(uint64_t low, uint64_t high)
+// l.firstIndex <= lo <= hi <= l.firstIndex + len(l.entries)
+Status RaftLog::mustCheckOutOfBounds(uint64_t low, uint64_t high)
 {
-    return {};
+    if (low > high)
+    {
+        assert(0);
+    }
+
+    uint64_t first = firstIndex();
+    if (low < first)
+    {
+        return ERROR_COMPACTED;
+    }
+
+    uint64_t length = lastIndex() + 1 - first;
+    if (high > first + length)
+    {
+        assert(0);
+    }
+
+    return OK;
+}
+
+Status RaftLog::slice(uint64_t low, uint64_t high, std::vector<LogEntry*>& ents)
+{
+    Status s = mustCheckOutOfBounds(low, high);
+    if (!s.IsOK())
+    {
+        return s;
+    }
+    if (low == high)
+    {
+        return OK;
+    }
+    if (low >= mUnstable->mOffset)
+    {
+        std::vector<LogEntry*> entries = mUnstable->slice(low, high);
+        for (uint i = 0; i < entries.size(); i++)
+        {
+            ents.push_back(entries[i]);
+        }
+        return OK;
+    }
+    uint64_t cut = std::min(high, mUnstable->mOffset);
+    std::vector<LogEntry*> entries;
+    s = mStorage->Entries(low, high, entries);
+    if (s == ERROR_COMPACTED)
+    {
+        return s;
+    }
+    return OK;
 }
 
 }

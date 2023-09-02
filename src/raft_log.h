@@ -148,10 +148,10 @@ private:
 	void scan();
 
 	// slice returns a slice of log entries from lo through hi-1, inclusive.
-	std::vector<LogEntry*> slice(uint64_t low, uint64_t high);
+	Status slice(uint64_t low, uint64_t high, std::vector<LogEntry*>& ents);
 
 	// l.firstIndex <= lo <= hi <= l.firstIndex + len(l.entries)
-	void mustCheckOutOfBounds();
+	Status mustCheckOutOfBounds(uint64_t low, uint64_t high);
 
 	uint64_t zeroTermOnOutOfBounds(uint64_t term);
 

@@ -73,7 +73,7 @@ void RaftImpl::Ready()
 
 Status RaftImpl::Step(RaftMessage& msg)
 {
-    Status s = RAFT_OK;
+    Status s = OK;
     if (msg.term == 0)
     {
         // local message
@@ -225,7 +225,7 @@ Status RaftImpl::stepFollower(RaftMessage& msg)
         }
 
     }
-    return RAFT_OK;
+    return OK;
 }
 
 Status RaftImpl::stepCandidate(RaftMessage& msg)
@@ -269,7 +269,7 @@ Status RaftImpl::stepCandidate(RaftMessage& msg)
         case MsgTimeoutNow:
             LOG(INFO) << mId <<  "[term " << msg.term << " state " << mState << " ] ignored MsgTimeoutNow from " << msg.from;
     }
-    return RAFT_OK;
+    return OK;
 }
 
 Status RaftImpl::stepLeader(RaftMessage& msg)
@@ -286,7 +286,7 @@ Status RaftImpl::stepLeader(RaftMessage& msg)
                 return ERROR_PROPOSAL_DROPPED;
             }
     }
-    return RAFT_OK;
+    return OK;
 }
 
 bool RaftImpl::appendEntry(std::vector<raft::LogEntry*> entries)

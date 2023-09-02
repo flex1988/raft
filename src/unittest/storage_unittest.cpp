@@ -154,8 +154,8 @@ TEST_F(StorageFixture, FirstIndex)
 TEST_F(StorageFixture, Entries)
 {
     std::vector<EntriesTestCase> cases = {
-        { {3,3,4,4,5,5,6,6}, 2, 6, 0, ERROR_MEMSTOR_COMPACTED.Code(), {} },
-        { {3,3,4,4,5,5,6,6}, 3, 4, 0, ERROR_MEMSTOR_COMPACTED.Code(), {} },
+        { {3,3,4,4,5,5,6,6}, 2, 6, 0, ERROR_COMPACTED.Code(), {} },
+        { {3,3,4,4,5,5,6,6}, 3, 4, 0, ERROR_COMPACTED.Code(), {} },
         { {3,3,4,4,5,5,6,6}, 4, 5, 1, 0, {4, 4} },
         { {3,3,4,4,5,5,6,6}, 4, 6, 2, 0, {4, 4, 5, 5} },
         { {3,3,4,4,5,5,6,6}, 4, 7, 3, 0, {4, 4, 5, 5, 6, 6} }
@@ -230,7 +230,7 @@ TEST_F(StorageFixture, Compact)
         int logs[6] = {3, 3, 4, 4, 5, 5};
         std::unique_ptr<MemoryStorage> mem = std::move(prepareEntries(logs, 6));  
         Status s = mem->Compact(2);
-        EXPECT_EQ(s.Code(), ERROR_MEMSTOR_COMPACTED.Code());
+        EXPECT_EQ(s.Code(), ERROR_COMPACTED.Code());
         EXPECT_EQ(mem->mEntries[0]->index, 3);
         EXPECT_EQ(mem->mEntries[0]->term, 3);
         EXPECT_EQ(mem->mEntries.size(), 3);
@@ -240,7 +240,7 @@ TEST_F(StorageFixture, Compact)
         int logs[6] = {3, 3, 4, 4, 5, 5};
         std::unique_ptr<MemoryStorage> mem = std::move(prepareEntries(logs, 6));  
         Status s = mem->Compact(3);
-        EXPECT_EQ(s.Code(), ERROR_MEMSTOR_COMPACTED.Code());
+        EXPECT_EQ(s.Code(), ERROR_COMPACTED.Code());
         EXPECT_EQ(mem->mEntries[0]->index, 3);
         EXPECT_EQ(mem->mEntries[0]->term, 3);
         EXPECT_EQ(mem->mEntries.size(), 3);
@@ -294,5 +294,5 @@ TEST_F(StorageFixture, ApplySnapshot)
         snapshot2.mutable_meta()->set_index(3);
         snapshot2.mutable_meta()->set_term(3);
         Status s2 = memStor->ApplySnapshot(snapshot2);
-        EXPECT_EQ(s2.Code(), ERROR_MEMSTOR_SNAP_OUTOFDATE.Code());
+        EXPECT_EQ(s2.Code(), ERROR_SNAP_OUTOFDATE.Code());
 }
