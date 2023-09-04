@@ -16,15 +16,15 @@ public:
 private:
     // maybeFirstIndex returns the index of the first possible entry in entries
     // if it has a snapshot.
-    uint64_t maybeFirstIndex();
+    bool maybeFirstIndex(uint64_t& i);
 
     // maybeLastIndex returns the last index if it has at least one
     // unstable entry or snapshot.
-    uint64_t maybeLastIndex();
+    bool maybeLastIndex(uint64_t& i);
 
     // maybeTerm returns the term of the entry at index i, if there
     // is any.
-    uint64_t maybeTerm(uint64_t i);
+    bool maybeTerm(uint64_t i, uint64_t& t);
 
     // nextEntries returns the unstable entries that are not already in the process
     // of being written to storage.
@@ -79,7 +79,7 @@ private:
     // the incoming unstable snapshot, if any.
     raft::Snapshot*                 mSnapshot;
     // all entries that have not yet been written to storage.
-    std::vector<LogEntry*>    mEntries;
+    std::vector<LogEntry*>          mEntries;
     // entries[i] has raft log position i+offset.
     uint64_t                        mOffset;
     // if true, snapshot is being written to storage.

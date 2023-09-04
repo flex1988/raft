@@ -4,6 +4,9 @@
 #include <string>
 #include <vector>
 
+#define FOREACH(iter, container) \
+    for (decltype(container.begin()) iter = container.begin(); iter != container.end(); iter++)
+
 namespace raft
 {
     void SplitString(std::vector<std::string>& results, const std::string& str, std::string delimiter);

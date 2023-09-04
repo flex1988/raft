@@ -1,11 +1,48 @@
 #include <butil/logging.h>
 #include <memory>
 
+#include "util.h"
 #include "raft_impl.h"
 #include "progress_tracker.h"
 
 namespace raft
 {
+
+std::vector<LogEntry*> limitSize(std::vector<LogEntry*> ents, uint64_t maxSize)
+{
+    if (ents.empty())
+    {
+        return ents;
+    }
+    int size = ents[0]->size();
+    for (uint limit = 1; limit < ents.size(); limit++)
+    {
+        size += ents[limit]->size();
+        if (size > maxSize)
+        {
+            ents.resize(limit);
+            return ents;
+        }
+    }
+    return ents;
+}
+
+uint64_t entsSize(std::vector<LogEntry*> ents)
+{
+    uint64_t size = 0;
+    FOREACH(iter, ents)
+    {
+        size += (*iter)->size();
+    }
+    return size;
+}
+
+std::vector<LogEntry*> extent(std::vector<LogEntry*> dst, std::vector<LogEntry*> vals)
+{
+    dst.reserve(dst.size() + vals.size());
+    dst.insert(dst.end(), vals.begin(), vals.end());
+    return dst;
+}
 
 RaftImpl::RaftImpl(const Config& conf)
 : mId(conf.id),

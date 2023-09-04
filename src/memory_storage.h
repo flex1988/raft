@@ -14,9 +14,9 @@ public:
 
     void InitialState();
 
-    Status Entries(uint64_t start, uint64_t end, std::vector<LogEntry*>& entries);
+    Status Entries(uint64_t start, uint64_t end, uint64_t maxSize, std::vector<LogEntry*>& entries);
 
-    uint64_t Term(uint64_t i);
+    Status Term(uint64_t i, uint64_t& term);
 
     uint64_t LastIndex();
 

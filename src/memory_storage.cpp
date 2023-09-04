@@ -17,7 +17,7 @@ void MemoryStorage::InitialState()
 
 }
 
-Status MemoryStorage::Entries(uint64_t low, uint64_t high, std::vector<LogEntry*>& entries)
+Status MemoryStorage::Entries(uint64_t low, uint64_t high, uint64_t maxSize, std::vector<LogEntry*>& entries)
 {
 
     uint64_t offset = mEntries[0]->index;
@@ -37,6 +37,7 @@ Status MemoryStorage::Entries(uint64_t low, uint64_t high, std::vector<LogEntry*
 
     entries.reserve(high - low + 1);
     entries.insert(entries.begin(), mEntries.begin() + (low - offset), mEntries.begin() + (high - offset));
+    entries = limitSize(entries, maxSize);
     return OK;
 }
 
@@ -77,18 +78,21 @@ void MemoryStorage::Append(const std::vector<LogEntry*>& entries)
     }
 }
 
-uint64_t MemoryStorage::Term(uint64_t i)
+Status MemoryStorage::Term(uint64_t i, uint64_t& term)
 {
     uint64_t offset = mEntries[0]->index;
     if (i < offset)
     {
-        return 0;
+        term = 0;
+        return ERROR_COMPACTED;
     }
     if (i - offset >= mEntries.size())
     {
-        return 0;
+        term = 0;
+        return ERROR_UNAVAILABLE;
     }
-    return mEntries[i - offset]->term;
+    term = mEntries[i - offset]->term;
+    return OK;
 }
 
 uint64_t MemoryStorage::FirstIndex()
@@ -136,10 +140,7 @@ Status MemoryStorage::ApplySnapshot(const raft::Snapshot& snapshot)
         delete mEntries[i];
     }
     mEntries.clear();
-    LogEntry* log = new LogEntry;
-    log->term = snapshot.meta().term();
-    log->index = snapshot.meta().index();
-    mEntries.push_back(log);
+    mEntries.push_back(new LogEntry {snapshot.meta().index(), snapshot.meta().term()});
     return OK;
 }
 
@@ -151,11 +152,14 @@ Status MemoryStorage::Compact(uint64_t compactIndex)
         return ERROR_COMPACTED;
     }
 
-    CHECK_LE(compactIndex, LastIndex()) << "compact is out of bound lastIndex";
+    if (compactIndex > LastIndex())
+    {
+        LOG(ERROR) << "compact is out of bound lastIndex compactIndex: " << compactIndex << " lastIndex: " << LastIndex(); 
+        assert(0);
+    }
+
     uint64_t i = compactIndex - offset;
-    LogEntry* log = new LogEntry;
-    log->index = mEntries[i]->index;
-    log->term = mEntries[i]->term;
+    LogEntry* log = new LogEntry(mEntries[i]->index, mEntries[i]->term);
     std::vector<LogEntry*> newEntries;
     newEntries.push_back(log);
     for (int j = 0; j < i; j++)

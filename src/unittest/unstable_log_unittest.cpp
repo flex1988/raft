@@ -1,5 +1,6 @@
 #include "gtest/gtest.h"
 #include "status.h"
+#include "util.h"
 #include "unittest/raft_unittest_util.h"
 #include "raft_unstable_log.h"
 #include <memory>
@@ -55,154 +56,128 @@ protected:
 
 TEST_F(UnstableFixture, MaybeFirstIndex)
 {
+    struct MaybeFirstIndexCase
+    {
+        LogEntry*   add;
+        LogEntry*   snapshot;
+        int64_t     offset;
+        uint64_t    windex;
+    };
+
+    std::vector<MaybeFirstIndexCase> cases = {
+        { new LogEntry {5, 1}, NULL, 5, 0},
+        { NULL, NULL, -1, 0},
+        { new LogEntry {5, 1}, new LogEntry {4, 1}, 5, 5},
+    };
+
+    FOREACH(iter, cases)
     {
         std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
-        addEntry(unstable.get(), 1, 5);
-        unstable->mOffset = 5;
-
-        EXPECT_EQ(unstable->maybeFirstIndex(), 0);
-    }
-
-    {
-        std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
-        EXPECT_EQ(unstable->maybeFirstIndex(), 0);
-    }
-
-    {
-        std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
-        addEntry(unstable.get(), 1, 5);
-        addSnapshot(unstable.get(), 1, 4);
-        unstable->mOffset = 5;
-
-        EXPECT_EQ(unstable->maybeFirstIndex(), 5);
-    }
-
-    {
-        std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
-        addSnapshot(unstable.get(), 1, 4);
-        unstable->mOffset = 5;
-
-        EXPECT_EQ(unstable->maybeFirstIndex(), 5);
+        if (iter->add)
+        {
+            unstable->mEntries.push_back(iter->add);
+        }
+        if (iter->offset > 0)
+        {
+            unstable->mOffset = iter->offset;
+        }
+        if (iter->snapshot)
+        {
+            addSnapshot(unstable.get(), iter->snapshot->term, iter->snapshot->index);
+        }
+        uint64_t i = 0;
+        unstable->maybeFirstIndex(i);
+        EXPECT_EQ(i, iter->windex);
     }
 }
 
 TEST_F(UnstableFixture, MaybeLastIndex)
 {
+    struct MaybeLastIndexCase
+    {
+        LogEntry*   add;
+        LogEntry*   snapshot;
+        uint64_t    offset;
+        bool        wok;
+        uint64_t    woffset;
+    };
+
+    std::vector<MaybeLastIndexCase> cases = {
+        { new LogEntry { 5, 1}, NULL, 5, true, 5},
+        { new LogEntry { 5, 1}, new LogEntry { 4, 1},  5, true, 5},
+        { NULL, new LogEntry { 4, 1},  5, true, 4},
+        { NULL, NULL, 0, false, 0},
+    };
+
+    FOREACH(iter, cases)
     {
         std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
-        addEntry(unstable.get(), 1, 5);
-        unstable->mOffset = 5;
+        if (iter->add)
+        {
+            unstable->mEntries.push_back(iter->add);
+        }
 
-        EXPECT_EQ(unstable->maybeLastIndex(), 5);
-    }
+        if (iter->snapshot)
+        {
+            raft::Snapshot* snapshot = new raft::Snapshot;
+            raft::SnapshotMetadata* meta = new raft::SnapshotMetadata;
+            meta->set_term(iter->snapshot->term);
+            meta->set_index(iter->snapshot->index);
+            snapshot->set_allocated_meta(meta);
+            unstable->mSnapshot = snapshot;
+        }
 
-    {
-        std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
-        addEntry(unstable.get(), 1, 5);
-        addSnapshot(unstable.get(), 1, 4);
-
-        unstable->mOffset = 5;
-
-        EXPECT_EQ(unstable->maybeLastIndex(), 5);
-    }
-
-    {
-        std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
-        addSnapshot(unstable.get(), 1, 4);
-
-        unstable->mOffset = 5;
-
-        EXPECT_EQ(unstable->maybeLastIndex(), 4);
-    }
-
-    {
-        std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
-        EXPECT_EQ(unstable->maybeLastIndex(), 0);
+        unstable->mOffset = iter->offset;
+        uint64_t i = 0;
+        bool isok = unstable->maybeLastIndex(i);
+        EXPECT_EQ(isok, iter->wok);
+        EXPECT_EQ(i, iter->woffset);
     }
 }
 
 TEST_F(UnstableFixture, MaybeTerm)
 {
+    struct MaybeTermCase
+    {
+        std::vector<LogEntry*>  entries;
+        uint64_t                offset;
+        LogEntry*               snapshot;
+        uint64_t                index;
+        bool                    wok;
+        uint64_t                wterm;
+    };
+
+    std::vector<MaybeTermCase> cases = {
+        // term from entries
+        { { new LogEntry {5, 1} }, 5, NULL, 5, true, 1},
+        { { new LogEntry {5, 1} }, 5, NULL, 6, false, 0},
+        { { new LogEntry {5, 1} }, 5, NULL, 4, false, 0},
+        { { new LogEntry {5, 1} }, 5, new LogEntry { 4, 1}, 5, true, 1},
+        { { new LogEntry {5, 1} }, 5, new LogEntry { 4, 1}, 6, false, 0},
+        // term from snapshot
+        { { new LogEntry {5, 1} }, 5, new LogEntry { 4, 1}, 4, true, 1},
+        { { new LogEntry {5, 1} }, 5, new LogEntry { 4, 1}, 3, false, 0},
+        { { }, 5, new LogEntry { 4, 1}, 5, false, 0},
+        { { }, 5, new LogEntry { 4, 1}, 4, true, 1},
+        { { }, 0, NULL, 5, false, 0},
+    };
+
+    FOREACH(iter, cases)
     {
         std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
-        addEntry(unstable.get(), 1, 5);
-        unstable->mOffset = 5;
-
-        EXPECT_EQ(unstable->maybeTerm(5), 1);
-    }
-
-    {
-        std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
-        addEntry(unstable.get(), 1, 5);
-        mUnstable->mOffset = 5;
-
-        EXPECT_EQ(mUnstable->maybeTerm(6), 0);
-    }
-
-    {
-        std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
-        addEntry(unstable.get(), 1, 5);
-        unstable->mOffset = 5;
-
-        EXPECT_EQ(unstable->maybeTerm(4), 0);
-    }
-
-    {
-        std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
-        addEntry(unstable.get(), 1, 5);
-        addSnapshot(unstable.get(), 1, 4);
-        unstable->mOffset = 5;
-
-        EXPECT_EQ(unstable->maybeTerm(5), 1);
-    }
-
-    {
-        std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
-        addEntry(unstable.get(), 1, 5);
-        addSnapshot(unstable.get(), 1, 4);
-        unstable->mOffset = 5;
-
-        EXPECT_EQ(unstable->maybeTerm(6), 0);
-    }
-
-    {
-        std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
-        addEntry(unstable.get(), 1, 5);
-        addSnapshot(unstable.get(), 1, 4);
-        unstable->mOffset = 5;
-
-        EXPECT_EQ(unstable->maybeTerm(4), 1);
-    }
-
-    {
-        std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
-        addEntry(unstable.get(), 1, 5);
-        addSnapshot(unstable.get(), 1, 4);
-        unstable->mOffset = 5;
-
-        EXPECT_EQ(unstable->maybeTerm(3), 0);
-    }
-
-    {
-        std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
-        addSnapshot(unstable.get(), 1, 4);
-        unstable->mOffset = 5;
-
-        EXPECT_EQ(unstable->maybeTerm(5), 0);
-    }
-
-    {
-        std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
-        addSnapshot(unstable.get(), 1, 4);
-        unstable->mOffset = 5;
-
-        EXPECT_EQ(unstable->maybeTerm(4), 1);
-    }
-
-    {
-        std::unique_ptr<RaftUnstable> unstable(new RaftUnstable);
-
-        EXPECT_EQ(unstable->maybeTerm(5), 0);
+        unstable->mEntries = iter->entries;
+        unstable->mOffset = iter->offset;
+        if (iter->snapshot)
+        {
+            raft::Snapshot* snapshot = new raft::Snapshot;
+            snapshot->mutable_meta()->set_term(iter->snapshot->term);
+            snapshot->mutable_meta()->set_index(iter->snapshot->index);
+            unstable->mSnapshot = snapshot;
+        }
+        uint64_t term = 0;
+        bool isok = unstable->maybeTerm(iter->index, term);
+        EXPECT_EQ(isok, iter->wok);
+        EXPECT_EQ(term, iter->wterm);
     }
 }
 

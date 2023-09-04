@@ -1,6 +1,7 @@
 #include <butil/logging.h>
 
 #include "raft_unstable_log.h"
+#include "util.h"
 
 namespace raft
 {
@@ -15,44 +16,59 @@ RaftUnstable::~RaftUnstable()
 
 }
 
-uint64_t RaftUnstable::maybeTerm(uint64_t i)
+bool RaftUnstable::maybeTerm(uint64_t i, uint64_t& t)
 {
     if (i < mOffset)
     {
         if (mSnapshot != NULL && mSnapshot->meta().index() == i)
         {
-            return mSnapshot->meta().term();
+            t = mSnapshot->meta().term();
+            return true;
         }
-        return 0;
+        t = 0;
+        return false;
     }
-    uint64_t last = maybeLastIndex();
-    if (i > last || last == 0)
+    uint64_t last = 0;
+    bool ret = maybeLastIndex(last);
+    if (!ret)
     {
-        return 0;
+        t = 0;
+        return false;
     }
-    return mEntries[i - mOffset]->term;
+    if (i > last)
+    {
+        t = 0;
+        return false;
+    }
+    t = mEntries[i - mOffset]->term;
+    return true;
 }
 
-uint64_t RaftUnstable::maybeLastIndex()
+bool RaftUnstable::maybeLastIndex(uint64_t& i)
 {
     if (!mEntries.empty())
     {
-        return mOffset + mEntries.size() - 1;
+        i = mOffset + mEntries.size() - 1;
+        return true;
     }
     if (mSnapshot != NULL)
     {
-        return mSnapshot->meta().index();
+        i = mSnapshot->meta().index();
+        return true;
     }
-    return 0;
+    i = 0;
+    return false;
 }
 
-uint64_t RaftUnstable::maybeFirstIndex()
+bool RaftUnstable::maybeFirstIndex(uint64_t& i)
 {
     if (mSnapshot != NULL)
     {
-        return mSnapshot->meta().index() + 1;
+        i = mSnapshot->meta().index() + 1;
+        return true;
     }
-    return 0;
+    i = 0;
+    return false;
 }
 
 std::vector<LogEntry*> RaftUnstable::nextEntries()
@@ -94,8 +110,9 @@ void RaftUnstable::acceptInProgress()
 
 void RaftUnstable::stableTo(uint64_t i, uint64_t t)
 {
-    uint64_t term = maybeTerm(i);
-    if (term == 0)
+    uint64_t term = 0;
+    bool ret = maybeTerm(i, term);
+    if (!ret)
     {
         LOG(INFO) << "entry at index " << i << " missing from unstable log; ignoring";
         return;
@@ -114,17 +131,14 @@ void RaftUnstable::stableTo(uint64_t i, uint64_t t)
 
     uint truncate = i + 1 - mOffset;
     std::vector<LogEntry*> newEntries;
-    for (uint i = 0; i < mEntries.size(); i++)
+    for (uint j = 0; j < mEntries.size(); j++)
     {
-        if (i < truncate)
+        if (j >= truncate)
         {
-            delete mEntries[i];
-        }
-        else
-        {
-            newEntries.push_back(mEntries[i]);
+            newEntries.push_back(mEntries[j]);
         }
     }
+
     mEntries = newEntries;
     mOffset = i + 1;
     mOffsetInProgress = std::max(mOffsetInProgress, mOffset);
@@ -162,6 +176,7 @@ void RaftUnstable::truncateAndAppend(std::vector<LogEntry*> entries)
     uint64_t fromIndex = entries[0]->index;
     if (fromIndex == mOffset + mEntries.size())
     {
+        mEntries.reserve(mEntries.size() + entries.size());
         mEntries.insert(mEntries.end(), entries.begin(), entries.end());
     }
     else if (fromIndex <= mOffset)
@@ -174,6 +189,7 @@ void RaftUnstable::truncateAndAppend(std::vector<LogEntry*> entries)
     else
     {
         mEntries = slice(mOffset, fromIndex);
+        mEntries.reserve(mEntries.size() + entries.size());
         mEntries.insert(mEntries.end(), entries.begin(), entries.end());
         mOffsetInProgress = std::min(mOffsetInProgress, fromIndex);
     }
@@ -188,7 +204,7 @@ std::vector<LogEntry*> RaftUnstable::slice(uint64_t low, uint64_t high)
     {
         if (i < low - mOffset || i >= high - mOffset)
         {
-            delete mEntries[i];
+            ;
         }
         else
         {

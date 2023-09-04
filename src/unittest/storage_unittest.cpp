@@ -1,7 +1,8 @@
 #include "gtest/gtest.h"
-#include "src/include/status.h"
-#include "src/unittest/raft_unittest_util.h"
-#include "src/memory_storage.h"
+#include "status.h"
+#include "raft_unittest_util.h"
+#include "memory_storage.h"
+#include "util.h"
 #include <memory>
 
 using namespace raft;
@@ -38,7 +39,7 @@ public:
         std::vector<raft::LogEntry*> entries;
         for (int i = 0; i < length; i+=2)
         {
-            entries.push_back(new LogEntry(logs[i], logs[i+1], NULL));
+            entries.push_back(new LogEntry(logs[i], logs[i+1]));
         }
 
         std::unique_ptr<MemoryStorage> mem = std::move(allocMemoryStorage(entries));    
@@ -57,36 +58,6 @@ public:
 
     void TearDown()
     {
-    }
-
-    struct EntriesTestCase
-    {
-        std::vector<uint64_t> entries;
-        uint64_t start;
-        uint64_t end;
-        int count;
-        int errorcode;
-        std::vector<uint64_t> result;
-    };
-
-    void runEntries(EntriesTestCase* t)
-    {
-        std::vector<raft::LogEntry*> entries;
-        for (uint32_t i = 0; i < t->entries.size();)
-        {
-            entries.push_back(allocEntry(t->entries[i], t->entries[i+1], NULL));
-            i += 2;
-        }
-        std::unique_ptr<MemoryStorage> mem = allocMemoryStorage(entries);
-        std::vector<raft::LogEntry*> fetch;
-        Status s = mem->Entries(t->start, t->end, fetch);
-        EXPECT_EQ(s.Code(), t->errorcode);
-        EXPECT_EQ(fetch.size(), t->count);
-        for (int i = 0; i < t->count; i++)
-        {
-            EXPECT_EQ(fetch[i]->index, t->result[i*2]);
-            EXPECT_EQ(fetch[i]->term, t->result[i*2 + 1]);
-        }
     }
 
     struct AppendTestCase
@@ -129,11 +100,17 @@ public:
 
 TEST_F(StorageFixture, Term)
 {
-    EXPECT_EQ(mMemStor->Term(2), 0);
-    EXPECT_EQ(mMemStor->Term(3), 3);
-    EXPECT_EQ(mMemStor->Term(4), 4);
-    EXPECT_EQ(mMemStor->Term(5), 5);
-    EXPECT_EQ(mMemStor->Term(6), 0);
+    uint64_t t = 0;
+    mMemStor->Term(2, t);
+    EXPECT_EQ(t, 0);
+    mMemStor->Term(3, t);
+    EXPECT_EQ(t, 3);
+    mMemStor->Term(4, t);
+    EXPECT_EQ(t, 4);
+    mMemStor->Term(5, t);
+    EXPECT_EQ(t, 5);
+    mMemStor->Term(6, t);
+    EXPECT_EQ(t, 0);
 }
 
 TEST_F(StorageFixture, LastIndex)
@@ -153,17 +130,43 @@ TEST_F(StorageFixture, FirstIndex)
 
 TEST_F(StorageFixture, Entries)
 {
-    std::vector<EntriesTestCase> cases = {
-        { {3,3,4,4,5,5,6,6}, 2, 6, 0, ERROR_COMPACTED.Code(), {} },
-        { {3,3,4,4,5,5,6,6}, 3, 4, 0, ERROR_COMPACTED.Code(), {} },
-        { {3,3,4,4,5,5,6,6}, 4, 5, 1, 0, {4, 4} },
-        { {3,3,4,4,5,5,6,6}, 4, 6, 2, 0, {4, 4, 5, 5} },
-        { {3,3,4,4,5,5,6,6}, 4, 7, 3, 0, {4, 4, 5, 5, 6, 6} }
+    struct EntriesTestCase
+    {
+        std::vector<uint64_t> entries;
+        uint64_t start;
+        uint64_t end;
+        uint64_t maxsize;
+        int count;
+        int errorcode;
+        std::vector<uint64_t> result;
     };
 
-    for (uint32_t i = 0; i < cases.size(); i++)
+    std::vector<EntriesTestCase> cases = {
+        { {3,3,4,4,5,5,6,6}, 2, 6, UINT64_MAX, 0, ERROR_COMPACTED.Code(), {} },
+        { {3,3,4,4,5,5,6,6}, 3, 4, UINT64_MAX, 0, ERROR_COMPACTED.Code(), {} },
+        { {3,3,4,4,5,5,6,6}, 4, 5, UINT64_MAX, 1, 0, {4, 4} },
+        { {3,3,4,4,5,5,6,6}, 4, 6, UINT64_MAX, 2, 0, {4, 4, 5, 5} },
+        { {3,3,4,4,5,5,6,6}, 4, 7, UINT64_MAX, 3, 0, {4, 4, 5, 5, 6, 6} }
+    };
+
+    FOREACH(iter, cases)
     {
-        runEntries(&cases[i]);
+        std::vector<raft::LogEntry*> entries;
+        for (uint32_t i = 0; i < iter->entries.size();)
+        {
+            entries.push_back(allocEntry(iter->entries[i], iter->entries[i+1], NULL));
+            i += 2;
+        }
+        std::unique_ptr<MemoryStorage> mem = allocMemoryStorage(entries);
+        std::vector<raft::LogEntry*> fetch;
+        Status s = mem->Entries(iter->start, iter->end, iter->maxsize, fetch);
+        EXPECT_EQ(s.Code(), iter->errorcode);
+        EXPECT_EQ(fetch.size(), iter->count);
+        for (int i = 0; i < iter->count; i++)
+        {
+            EXPECT_EQ(fetch[i]->index, iter->result[i*2]);
+            EXPECT_EQ(fetch[i]->term, iter->result[i*2 + 1]);
+        }
     }
 }
 

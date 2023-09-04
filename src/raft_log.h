@@ -18,7 +18,7 @@ public:
 private:
 	// maybeAppend returns (0, false) if the entries cannot be appended. Otherwise,
 	// it returns (last index of new entries, true).
-	uint64_t maybeAppend(uint64_t index, uint64_t term, uint64_t committed, std::vector<LogEntry*> ents);
+	bool maybeAppend(uint64_t index, uint64_t term, uint64_t committed, std::vector<LogEntry*> ents, uint64_t& lasti);
 	
 	uint64_t append(std::vector<LogEntry*> ents);
 
@@ -51,7 +51,7 @@ private:
 
 	// nextUnstableEnts returns all entries that are available to be written to the
 	// local stable log and are not already in-progress.
-	void nextUnstableEnts();
+	std::vector<LogEntry*> nextUnstableEnts();
 
 	// hasNextUnstableEnts returns if there are any entries that are available to be
 	// written to the local stable log and are not already in-progress.
@@ -67,17 +67,17 @@ private:
 	// appended them to the local raft log yet. If allowUnstable is true, committed
 	// entries from the unstable log may be returned; otherwise, only entries known
 	// to reside locally on stable storage will be returned.
-	void nextCommittedEnts();
+	std::vector<LogEntry*> nextCommittedEnts(bool allowUnstable);
 
 	// hasNextCommittedEnts returns if there is any available entries for execution.
 	// This is a fast check without heavy raftLog.slice() in nextCommittedEnts().
-	bool hasNextCommittedEnts();
+	bool hasNextCommittedEnts(bool allowUnstable);
 
 	// maxAppliableIndex returns the maximum committed index that can be applied.
 	// If allowUnstable is true, committed entries from the unstable log can be
 	// applied; otherwise, only entries known to reside locally on stable storage
 	// can be applied.
-	uint64_t maxAppliableIndex();
+	uint64_t maxAppliableIndex(bool allowUnstable);
 
 	// nextUnstableSnapshot returns the snapshot, if present, that is available to
 	// be applied to the local storage and is not already in-progress.
@@ -115,9 +115,9 @@ private:
 
 	uint64_t lastTerm();
 
-	uint64_t term(uint64_t i);
+	Status term(uint64_t i, uint64_t& term);
 
-	std::vector<LogEntry*> entries(uint64_t i);
+	Status entries(uint64_t i, uint64_t maxSize, std::vector<LogEntry*>& ents);
 
 	std::vector<LogEntry*> allEntries();
 
@@ -145,10 +145,10 @@ private:
 	//
 	// If the callback returns an error, scan terminates and returns this error
 	// immediately. This can be used to stop the scan early ("break" the loop).
-	void scan();
+	Status scan(uint64_t low, uint64_t high, uint64_t pageSize, std::function<Status(std::vector<LogEntry*>)> cb);
 
 	// slice returns a slice of log entries from lo through hi-1, inclusive.
-	Status slice(uint64_t low, uint64_t high, std::vector<LogEntry*>& ents);
+	Status slice(uint64_t low, uint64_t high, uint64_t pageSize, std::vector<LogEntry*>& ents);
 
 	// l.firstIndex <= lo <= hi <= l.firstIndex + len(l.entries)
 	Status mustCheckOutOfBounds(uint64_t low, uint64_t high);
@@ -191,6 +191,7 @@ private:
 	// applyingEntsPaused is true when entry application has been paused until
 	// enough progress is acknowledged.
 	bool					mApplyingEntsPaused;
+	raft::Snapshot          mSnapshot;
 };
 
 }

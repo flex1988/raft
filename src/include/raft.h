@@ -13,25 +13,33 @@ namespace raft
 
 const uint64_t NONE_LEADER_ID = 0;
 
+const uint64_t INVALID_INDEX = UINT64_MAX;
+
 struct LogEntry
 {
     uint64_t index;
     uint64_t term;
     char*    data;
+    int      datalen;
 
     LogEntry()
-    : index(0), term(0), data(NULL)
+    : index(0), term(0), data(NULL), datalen(0)
     {
     }
 
-    LogEntry(uint64_t index, uint64_t term, char* data)
-    : index(index), term(term), data(data)
+    LogEntry(uint64_t index, uint64_t term, char* data, int len)
+    : index(index), term(term), data(data), datalen(len)
     {
     }
 
     LogEntry(uint64_t index, uint64_t term)
-    : index(index), term(term), data(NULL)
+    : index(index), term(term), data(NULL), datalen(0)
     {
+    }
+
+    uint64_t size()
+    {
+        return sizeof(*this) + datalen;
     }
 };
 
@@ -198,13 +206,13 @@ public:
     //
     // Returns ErrCompacted if entry lo has been compacted, or ErrUnavailable if
     // encountered an unavailable entry in [lo, hi).
-    virtual Status Entries(uint64_t start, uint64_t end, std::vector<LogEntry*>& entries) = 0;
+    virtual Status Entries(uint64_t start, uint64_t end, uint64_t maxSize, std::vector<LogEntry*>& entries) = 0;
 
     // Term returns the term of entry i, which must be in the range
     // [FirstIndex()-1, LastIndex()]. The term of the entry before
     // FirstIndex is retained for matching purposes even though the
     // rest of that entry may not be available.
-    virtual uint64_t Term(uint64_t i) = 0;
+    virtual Status Term(uint64_t i, uint64_t& t) = 0;
 
     // LastIndex returns the index of the last entry in the log.
     virtual uint64_t LastIndex() = 0;
@@ -221,6 +229,12 @@ public:
     // snapshot and call Snapshot later.
     virtual void Snapshot() = 0;
 };
+
+std::vector<LogEntry*> limitSize(std::vector<LogEntry*> ents, uint64_t maxSize);
+
+uint64_t entsSize(std::vector<LogEntry*> ents);
+
+std::vector<LogEntry*> extent(std::vector<LogEntry*> dst, std::vector<LogEntry*> vals);
 
 }
 #endif  // __RAFT_H__
